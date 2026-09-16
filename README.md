@@ -43,6 +43,32 @@ Zwei Regeln halten das benutzbar:
 Im Root liegt außerdem `.gitattributes` — es normalisiert Zeilenenden auf LF und markiert PDFs und
 PNGs als binär. Es gehört ins Root, damit es fürs ganze Repo gilt.
 
+## Skills verteilen
+
+Installiert wird ein Skill nicht aus diesem Repo, sondern **in Claude hochgeladen** — entweder
+persönlich unter *claude.ai → Einstellungen → Skills* oder von einer Administratorin für die ganze
+Organisation. Danach steht er auch in Claude Code zur Verfügung, sobald man dort mit demselben
+Konto angemeldet ist.
+
+Hochgeladen wird **je Skill genau der Ordner, in dem die `SKILL.md` direkt liegt**:
+
+- `projektwissen/decision-records/` — ein Upload
+- `projektwissen/doku-update-sync/` — ein zweiter Upload
+- `projektwissen/` selbst **nicht**: das ist nur die Klammer, kein Skill. Ein Ordner ohne eigene
+  `SKILL.md` an der Wurzel wird nicht als Skill erkannt.
+
+Zwei Hinweise dazu:
+
+- **`assets/` am besten mitschicken.** Dann braucht das Setup im Zielprojekt keinen Netzzugriff.
+  Ohne `assets/` lädt Claude die Dateien von den Raw-URLs nach — das Repo ist öffentlich, das
+  funktioniert also auch für Kolleginnen ohne Zugriff darauf, nur eben nicht offline.
+- **Die Skills wirken in Claude Code, nicht im Web-Chat.** Sie legen Dateien im Repo an und
+  registrieren Hooks in `.claude/settings.json`. Eine Freigabe in der Organisation macht sie
+  verfügbar; gearbeitet wird mit ihnen im Projekt.
+
+Die [Anleitung](projektwissen/Anleitung-Projektwissen.pdf) ist nicht Teil eines Uploads — die geht
+an Menschen, nicht an Claude.
+
 ## Etwas ändern oder hinzufügen
 
 **Wer etwas an diesem Repo ändert, aktualisiert die README mit.** Das ist keine Höflichkeitsregel:
