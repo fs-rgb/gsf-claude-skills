@@ -5,8 +5,9 @@ und Ist-Stand landen automatisch in Dateien im Projekt, statt in einzelnen Chatv
 versickern. Jeder neue Chat — und jede neue Kollegin — liest sie von dort.
 
 **Wenn du die Skills nur benutzen willst, brauchst du dieses Repo nicht.**
-Lies die [Anleitung als PDF](Anleitung-Projektwissen.pdf) (2 Seiten) und schalte die Skills in
-deinem Profil frei: *claude.ai → Einstellungen → Skills*.
+Lies die [Anleitung als PDF](Anleitung-Projektwissen.pdf) (2 Seiten) und schalte
+`decision-records` in deinem Profil frei: *claude.ai → Einstellungen → Skills*. Das genügt —
+`doku-update-sync` lädt er sich beim ersten Lauf in einem Projekt selbst dazu.
 
 ---
 

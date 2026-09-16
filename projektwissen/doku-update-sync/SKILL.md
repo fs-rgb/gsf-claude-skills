@@ -71,6 +71,28 @@ Lesen, nicht raten:
 
 Gefundene Doku wird **wiederverwendet und im bestehenden Stil fortgeführt** — nie ersetzt, nie dupliziert.
 
+## S1a — Ist das überhaupt ein Git-Repo? (sonst läuft die Automatik ins Leere)
+
+`git rev-parse --show-toplevel` ausführen. Schlägt es fehl, ist der Ordner kein Repo — der
+Normalfall, wenn jemand ein frisches Projekt anlegt und diesen Skill als Erstes laufen lässt.
+
+Ohne Repo ist **die gesamte Automatisierung wirkungslos, ohne dass es auffällt**:
+
+- Das Hook-Skript beendet sich bei fehlendem Repo sofort mit Exit 0 — es feuert nie.
+- `.last-sync` kann keinen `HEAD`-SHA festhalten, das Delta ist nicht berechenbar.
+- Nichts lässt sich mitcommitten; wer das Projekt später clont, bekommt weder Doku noch Hooks.
+
+Deshalb **hier** fragen, nicht später: `git init` jetzt ausführen? (Vorschlag: ja)
+
+- **Ja** → `git init`, danach normal weiter. Der Commit am Ende des Setups enthält dann Doku, Hooks
+  und Skills zusammen.
+- **Nein** → Setup läuft durch, aber **S5 (Hooks) wird übersprungen**, statt eine tote Automatik zu
+  installieren. Im Abschluss-Report ausdrücklich benennen: Doku steht, die Automatik fehlt und
+  kommt erst mit `git init` plus erneutem Lauf dieses Skills.
+
+Fehlt zusätzlich `git config user.name` / `user.email`, einmalig nachfragen statt Attribution zu
+raten.
+
 ## S2 — Interview: Was für Doku braucht dieses Projekt? (Pflicht)
 
 Mit `AskUserQuestion` (oder dem Interaktions-Tool der Umgebung). **Nicht generisch fragen** —
@@ -185,11 +207,26 @@ relevant oder irrelevant gilt.
 2. **Registrieren** in `<repo>/.claude/settings.json` — **committed**, nicht `settings.local.json`,
    sonst greift bei Kolleginnen und Kollegen nichts. Vorlage: `settings-hooks.json` (siehe Punkt 1).
    Existiert die Datei bereits, wird der `hooks`-Block **hineingemischt**, nie ersetzt.
-3. **Skill mitliefern:** diesen Skill nach `<repo>/.claude/skills/doku-update-sync/` kopieren und
-   mitcommitten — sonst laufen die Hooks im Team ins Leere, weil der Skill dort nicht installiert
-   ist. Falls `decision-records` genutzt wird, ebenso kopieren. Die Kopie trägt in der Config unter
-   `skillSource` ihre Herkunft (`https://github.com/fs-rgb/gsf-claude-skills`), damit ein Update
-   auffindbar bleibt.
+3. **Beide Skills mitliefern:** diesen Skill nach `<repo>/.claude/skills/doku-update-sync/`
+   kopieren und mitcommitten — sonst laufen die Hooks im Team ins Leere, weil der Skill dort nicht
+   installiert ist. **`decision-records` genauso**, nach `<repo>/.claude/skills/decision-records/`:
+   der Sync-Modus übergibt bei begründungsbedürftigen Änderungen an ihn, und wer das Repo clont,
+   hat ihn sonst nicht.
+
+   Ist `decision-records` nicht als Datei greifbar — er läuft als installierter Skill, dessen
+   Ordner nicht im Dateisystem des Projekts liegt —, roh von der Quelle laden, mit derselben
+   Prüfung wie in Punkt 1b:
+
+   ```
+   https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/decision-records/SKILL.md
+   ```
+
+   Das Geladene muss mit `---` und `name: decision-records` beginnen — eine Fehlerseite käme sonst
+   unbemerkt als Skill im Repo an. Scheitert der Download, **nicht selbst nachbauen**: im
+   Abschluss-Report benennen, dass `decision-records` im Repo fehlt und nachgetragen werden muss.
+
+   Beide Kopien tragen in der Config unter `skillSource` ihre Herkunft
+   (`https://github.com/fs-rgb/gsf-claude-skills`), damit ein Update auffindbar bleibt.
 4. **Vorschlag zeigen, auf Bestätigung warten.** Nie ungefragt anlegen oder aktivieren.
 5. **Smoke-Test:** Skript einmal manuell mit leerem stdin aufrufen und prüfen, dass es bei sauberem
    Zustand mit Exit 0 und ohne Ausgabe endet. Ein Hook, der beim ersten echten Commit unerwartet

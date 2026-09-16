@@ -50,10 +50,38 @@ persönlich unter *claude.ai → Einstellungen → Skills* oder von einer Admini
 Organisation. Danach steht er auch in Claude Code zur Verfügung, sobald man dort mit demselben
 Konto angemeldet ist.
 
-Hochgeladen wird **je Skill genau der Ordner, in dem die `SKILL.md` direkt liegt**:
+### Der kurze Weg: nur `decision-records` teilen
+
+`decision-records` holt sich den Rest selbst nach. Fürs Team genügt deshalb **ein einziger Upload**
+— der Ordner `projektwissen/decision-records/` — und dieser Satz:
+
+> Skill `decision-records` in der Claude-App aktivieren, Projektordner in Claude Code öffnen,
+> `/decision-records` ausführen.
+
+Was dann ohne weiteres Zutun passiert:
+
+1. `decision-records` nimmt den Projektstand auf und fragt nach, was festzuhalten ist.
+2. Ist das noch kein Git-Repo, bietet er `git init` an — ohne Repo bliebe die Automatik wirkungslos.
+3. Fehlt `doku-update-sync`, lädt er ihn aus diesem Repo nach `.claude/skills/doku-update-sync/`.
+4. Dessen Setup lädt die Hook-Skripte nach und richtet die Automatik ein — nach Rückfrage.
+5. **Beide** Skills werden ins Projekt mitcommittet. Wer das Repo clont, hat sie dabei.
+
+Jeder Download wird vor dem Ablegen auf Echtheit geprüft. Schlägt er fehl, erzeugt das Setup die
+Hook-Skripte selbst nach *Anhang A* von `doku-update-sync/SKILL.md` — fehlender Zugriff auf dieses
+Repo lässt das Setup also nicht scheitern.
+
+### Der saubere Weg: beide Skills teilen
+
+Nur wegen der Updates. Liegen beide zentral in der Organisation, erreicht eine neue Version alle
+über die Claude-App. Beim kurzen Weg landet `doku-update-sync` stattdessen als Kopie in jedem
+Projekt, und ein Update muss dort nachgezogen werden. Funktional ändert sich nichts.
+
+### Was hochgeladen wird
+
+**Je Skill genau der Ordner, in dem die `SKILL.md` direkt liegt:**
 
 - `projektwissen/decision-records/` — ein Upload
-- `projektwissen/doku-update-sync/` — ein zweiter Upload
+- `projektwissen/doku-update-sync/` — ein zweiter, falls du den sauberen Weg gehst
 - `projektwissen/` selbst **nicht**: das ist nur die Klammer, kein Skill. Ein Ordner ohne eigene
   `SKILL.md` an der Wurzel wird nicht als Skill erkannt.
 
@@ -62,7 +90,7 @@ Zwei Hinweise dazu:
 - **`assets/` am besten mitschicken.** Dann braucht das Setup im Zielprojekt keinen Netzzugriff.
   Ohne `assets/` lädt Claude die Dateien von den Raw-URLs nach — das Repo ist öffentlich, das
   funktioniert also auch für Kolleginnen ohne Zugriff darauf, nur eben nicht offline.
-- **Die Skills wirken in Claude Code, nicht im Web-Chat.** Sie legen Dateien im Repo an und
+- **Die Skills wirken in Claude Code, nicht im Web-Chat.** Sie legen Dateien im Projekt an und
   registrieren Hooks in `.claude/settings.json`. Eine Freigabe in der Organisation macht sie
   verfügbar; gearbeitet wird mit ihnen im Projekt.
 
