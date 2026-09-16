@@ -168,7 +168,7 @@ relevant oder irrelevant gilt.
    b) **Sonst von GitHub laden** (Normalfall, wenn der Skill ohne Assets verteilt wurde). Basis-URL:
 
       ```
-      https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/doku-update-sync/assets/
+      https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/doku-update-sync/assets/
       ```
 
       Gebraucht werden: `doc-sync-gate.ps1` **oder** `doc-sync-gate.sh` (je nach Betriebssystem),

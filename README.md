@@ -1,89 +1,78 @@
 # gsf-claude-skills
 
-Zwei Claude-Code-Skills, die dafür sorgen, dass Projektwissen nicht verloren geht: Entscheidungen
-und Ist-Stand landen automatisch in Dateien im Projekt, statt in einzelnen Chatverläufen zu
-versickern. Jeder neue Chat — und jede neue Kollegin — liest sie von dort.
+Sammelstelle für die Claude-Skills von GSF — vor allem für die, die aus mehr als einer Datei
+bestehen.
 
-**Wenn du die Skills nur benutzen willst, brauchst du dieses Repo nicht.**
-Lies die [Anleitung als PDF](Anleitung-Projektwissen.pdf) (2 Seiten) und schalte die Skills in
-deinem Profil frei: *claude.ai → Einstellungen → Skills*.
+Ein Skill, der nur aus einer `SKILL.md` besteht, lässt sich noch per Copy-Paste weiterreichen.
+Sobald aber Hook-Skripte, Konfigurationsvorlagen oder Anleitungen dazugehören, geht das nicht mehr:
+dann braucht es einen Ort, von dem Claude sich die Dateien zur Laufzeit nachladen kann und an dem
+eindeutig ist, welche Version die aktuelle ist. Das ist dieses Repo.
 
----
-
-## Die zwei Skills
-
-| Skill | Frage | Verhalten |
-|---|---|---|
-| [`decision-records`](decision-records/SKILL.md) | „Warum haben wir das so entschieden?" | Fragt dich — die Antwort steht nirgends im Code |
-| [`doku-update-sync`](doku-update-sync/SKILL.md) | „Stimmt die Doku noch mit dem Projekt überein?" | Fragt nicht, schreibt still mit — er sieht es selbst |
-
-Sie greifen ineinander:
-
-```
-/decision-records            beim ersten Mal in einem Projekt
-      |
-      +--> richtet doku-update-sync ein: Hooks, Regeln, Doku-Dateien, CLAUDE.md
-                 |
-                 |  Hook feuert: nach Commit, bei erledigter Aufgabe,
-                 |  am Session-Ende, vor git push
-                 v
-           doku-update-sync   schreibt still, was er selbst sehen kann
-                 |
-                 +--> fehlt das "Warum"?  -->  decision-records fragt nach
-```
-
-Ein Befehl genügt: `/decision-records`. Alles Weitere richtet sich selbst ein.
+**Wenn du einen Skill nur benutzen willst, brauchst du das Repo nicht.** Skills schaltest du in
+deinem Profil frei: *claude.ai → Einstellungen → Skills*. Hier geht es um Weiterentwickeln und
+Verteilen.
 
 ## Was hier liegt
 
-```
-decision-records/SKILL.md          Entscheidungen festhalten (Ask-until-clear)
-doku-update-sync/SKILL.md          Doku aktuell halten + Automatik betreiben
-doku-update-sync/assets/           Dateien, die das Setup ins Projekt legt:
-    doc-sync-gate.ps1                Hook-Skript (Windows)
-    doc-sync-gate.sh                 Hook-Skript (macOS/Linux, benötigt jq)
-    doc-sync.config.json             Vorlage: was gilt als doku-relevant
-    settings-hooks.json              Vorlage: Hook-Registrierung für Claude Code
-Anleitung-Projektwissen.pdf        2-Seiten-Anleitung zum Verteilen (+ .html als Quelle)
-```
+| Ordner | Worum es geht |
+|---|---|
+| [`projektwissen/`](projektwissen/) | Zwei ineinandergreifende Skills — `decision-records` und `doku-update-sync` — die dafür sorgen, dass Projektwissen in Dateien im Projekt landet statt in einzelnen Chatverläufen. Mit 2-Seiten-Anleitung zum Verteilen. Details in [`projektwissen/README.md`](projektwissen/README.md). |
 
-Die Skills werden üblicherweise **ohne** den `assets/`-Ordner verteilt — Claude lädt sich die
-Dateien beim Setup von hier nach. Klappt das nicht (kein Netz, Proxy), erzeugt er sie nach der
-Spezifikation in *Anhang A* von `doku-update-sync/SKILL.md` selbst. Das Setup scheitert also nicht
-an fehlendem Zugriff auf dieses Repo.
+## Aufbau
 
-## Was das Setup in einem Projekt anlegt
-
-Alles davon wird **mitcommittet**, damit es beim Clone automatisch dabei ist:
+Ein Ordner pro Bündel, darin ein Ordner pro Skill:
 
 ```
-ARCHITECTURE.md                    Ist-Stand und Architektur-Entscheidungen
-docs/decisions/RULES.md            geltende Regeln (IMMER/NIEMALS)
-docs/decisions/QUALITY_DECISIONS.md  Produkt- und Prozess-Entscheidungen
-docs/decisions/.doc-sync.json      was als doku-relevant gilt, welche Ereignisse prüfen
-docs/decisions/.last-sync          bis zu welchem Commit die Doku geprüft ist
-.claude/hooks/doc-sync-gate.*      die Automatik
-.claude/settings.json              registriert die Automatik
-CLAUDE.md                          Verweisblock — sorgt dafür, dass jeder neue Chat die Doku liest
+<buendel>/
+    README.md              worum es geht, wie man es benutzt, wie man es weiterentwickelt
+    <skill-name>/
+        SKILL.md           der Skill selbst
+        assets/            Dateien, die der Skill zur Laufzeit in ein Projekt legt
+    <weiterer-skill>/
+        SKILL.md
 ```
 
-Welche dieser Dateien tatsächlich angelegt werden, entscheidet ein kurzes Interview beim ersten
-Lauf. Nichts davon passiert ohne ausdrückliche Zustimmung.
+Zwei Regeln halten das benutzbar:
 
-## Mitentwickeln
+- **Ein Skill-Ordner ist die Installationseinheit.** Genau dieser Ordner landet später unter
+  `~/.claude/skills/<name>/` oder `<repo>/.claude/skills/<name>/`. Deshalb liegt **nie ein
+  Skill-Ordner in einem anderen** — der innere ließe sich sonst nicht mehr einzeln installieren.
+- **Ein Skill ohne Zubehör braucht kein Bündel.** Er darf direkt im Root liegen, als
+  `<skill-name>/SKILL.md`.
 
-Änderungen an den Hook-Skripten bitte gegen die Fälle in *Anhang A* von
-`doku-update-sync/SKILL.md` prüfen — insbesondere die beiden, die still fehlschlagen:
+Im Root liegt außerdem `.gitattributes` — es normalisiert Zeilenenden auf LF und markiert PDFs und
+PNGs als binär. Es gehört ins Root, damit es fürs ganze Repo gilt.
 
-- Das Skript muss bei sauberem Projektzustand **ohne jede Ausgabe** mit Exit 0 enden.
-- In PowerShell darf `$ErrorActionPreference` **nicht** auf `Stop` stehen: `git` schreibt Warnungen
-  nach stderr, woraus Windows PowerShell sonst einen Abbruch macht — der Hook feuert dann nie, ohne
-  dass es auffällt.
+## Etwas ändern oder hinzufügen
 
-Die PDF wird aus `Anleitung-Projektwissen.html` erzeugt:
+**Wer etwas an diesem Repo ändert, aktualisiert die README mit.** Das ist keine Höflichkeitsregel:
+die README ist die einzige Stelle, an der steht, was es hier überhaupt gibt. Konkret heißt das:
 
-```powershell
-& "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --disable-gpu `
-  --no-pdf-header-footer --print-to-pdf="Anleitung-Projektwissen.pdf" `
-  "file:///$PWD/Anleitung-Projektwissen.html"
+| Änderung | Was in der README nachzuziehen ist |
+|---|---|
+| Neuer Skill oder neues Bündel | Eine Zeile in *Was hier liegt* |
+| Ordner umbenannt oder verschoben | *Was hier liegt* und die Links — **und die Raw-URLs, siehe unten** |
+| Aufbau-Konvention geändert | Der Abschnitt *Aufbau* |
+| Skill entfernt | Zeile raus, und prüfen, ob ein anderer Skill auf ihn verweist |
+
+Die README eines Bündels beschreibt dessen Inhalt; diese hier beschreibt nur, welche Bündel es gibt.
+Was nur ein Bündel betrifft, gehört also nicht hierher.
+
+### Vorsicht beim Verschieben: die Skills laden sich selbst nach
+
+Die Skills in diesem Repo holen sich ihre Assets beim Setup per Raw-URL von hier, mit dem Pfad fest
+verdrahtet:
+
 ```
+https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/<pfad-im-repo>
+```
+
+Ein umbenannter oder verschobener Ordner bricht das — und zwar **still**: GitHub liefert dann eine
+Fehlerseite, die ungeprüft als Skript oder Config im Zielprojekt landet. Nach jedem Verschieben
+deshalb:
+
+```bash
+grep -rn "raw.githubusercontent" --include="*.md" --include="*.json" .
+```
+
+und die gefundenen Pfade mitziehen.

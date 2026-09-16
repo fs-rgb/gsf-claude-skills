@@ -132,7 +132,7 @@ noch unter `<repo>/.claude/skills/doku-update-sync/` liegt. Dann in dieser Reihe
 1. Im aktuellen Repo unter `.claude/skills/doku-update-sync/` nachsehen — dorthin kopiert ihn sein
    eigenes Setup, er ist dann oft schon da.
 2. Sonst von der Quelle holen: **https://github.com/fs-rgb/gsf-claude-skills**, roh unter
-   `https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/doku-update-sync/SKILL.md`.
+   `https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/doku-update-sync/SKILL.md`.
    Nach `<repo>/.claude/skills/doku-update-sync/SKILL.md` ablegen und dessen Setup-Modus ausführen.
    Das Geladene vorher prüfen: es muss mit `---` und `name: doku-update-sync` beginnen — eine
    Fehlerseite kommt sonst unbemerkt als Skill im Repo an.
