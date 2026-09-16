@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Projektwissen festhalten</title>
+<style>
+  @page { size: A4; margin: 13mm 14mm 10mm 14mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  :root { --akz:#2f6fb0; --hell:#eaf2fa; --grau:#69727f; --linie:#dde3ea; --gold:#b8860b; }
+  body { font-family:"Segoe UI",system-ui,sans-serif; font-size:9.4pt; line-height:1.42;
+         color:#1f2430; margin:0; }
+
+  .seite { page-break-after: always; }
+  .seite:last-child { page-break-after: auto; }
+
+  h1 { font-size:18pt; margin:0 0 2px; letter-spacing:-.3px; }
+  h1 .sub { color:var(--akz); }
+  .lead { color:var(--grau); font-size:9.8pt; margin:0 0 11px; }
+
+  h2 { font-size:10.6pt; margin:13px 0 6px; padding-bottom:3px;
+       border-bottom:2px solid var(--linie); letter-spacing:-.1px; }
+  h2 .nr { display:inline-block; width:18px; height:18px; line-height:18px; background:var(--akz);
+           color:#fff; border-radius:50%; font-size:9pt; text-align:center; margin-right:6px;
+           vertical-align:1px; }
+  h3 { font-size:9.6pt; margin:0 0 3px; }
+  p { margin:0 0 6px; }
+  ul { margin:0 0 6px; padding-left:15px; }
+  li { margin-bottom:3px; }
+
+  code { font-family:Consolas,"Courier New",monospace; font-size:8.6pt; background:#f2f5f8;
+         padding:1px 4px; border-radius:3px; color:#16405f; }
+  pre { font-family:Consolas,"Courier New",monospace; font-size:8.5pt; background:#1f2937;
+        color:#e6edf3; padding:7px 10px; border-radius:5px; margin:5px 0 8px; line-height:1.4; }
+  pre .c { color:#8fa3b8; }
+
+  .karte { background:var(--hell); border-left:3px solid var(--akz); padding:8px 11px;
+           border-radius:0 5px 5px 0; margin:0 0 9px; }
+  .karte b { color:#1c4e7d; }
+  .warn { background:#fdf3e3; border-left-color:#d98324; }
+  .warn b { color:#96541a; }
+  .glossar { background:#f7f9fb; border:1px solid var(--linie); border-left:3px solid var(--grau);
+             padding:7px 11px; border-radius:0 5px 5px 0; margin:0 0 10px; font-size:8.9pt; }
+  .glossar b { color:#3d4756; }
+
+  .zwei { display:flex; gap:11px; margin-bottom:9px; }
+  .zwei > * { flex:1; min-width:0; }
+  .skill { border:1.5px solid var(--linie); border-radius:6px; padding:9px 11px; }
+  .skill.a { border-color:var(--gold); background:#fefaf0; }
+  .skill.b { border-color:var(--akz); background:#f4f9fe; }
+  .skill .cmd { font-family:Consolas,monospace; font-size:8.8pt; font-weight:700; display:block;
+                margin-bottom:1px; }
+  .skill.a .cmd { color:#8a6508; }
+  .skill.b .cmd { color:#1c4e7d; }
+  .skill .frage { font-style:italic; color:var(--grau); font-size:8.9pt; margin-bottom:5px;
+                  display:block; }
+  .skill ul { padding-left:14px; margin:0; font-size:8.9pt; }
+
+  table { width:100%; border-collapse:collapse; margin:3px 0 9px; }
+  th,td { text-align:left; padding:4.5px 8px; border-bottom:1px solid var(--linie);
+          vertical-align:top; }
+  th { background:#f6f8fa; font-size:8.3pt; text-transform:uppercase; letter-spacing:.4px;
+       color:var(--grau); border-bottom:1.5px solid var(--linie); }
+  td:first-child { white-space:nowrap; font-weight:600; color:#16405f; }
+
+  .ablauf { border:1px solid var(--linie); border-radius:6px; padding:9px 11px; margin:0 0 10px;
+            background:#fcfdfe; }
+  .reihe { display:flex; align-items:center; gap:7px; margin-bottom:6px; }
+  .reihe:last-child { margin-bottom:0; }
+  .kasten { border:1.4px solid var(--linie); border-radius:5px; padding:4px 8px; background:#fff;
+            font-size:8.7pt; line-height:1.3; }
+  .kasten b { display:block; font-size:8.9pt; }
+  .kasten.a { border-color:var(--gold); background:#fefaf0; }
+  .kasten.b { border-color:var(--akz); background:#f4f9fe; }
+  .pfeil { color:var(--akz); font-size:9pt; flex:0 0 auto; }
+  .note { font-size:8.5pt; color:var(--grau); flex:1; }
+
+  .fuss { margin-top:11px; padding-top:6px; border-top:1px solid var(--linie); font-size:8pt;
+          color:var(--grau); display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+
+<!-- ========================= SEITE 1 ========================= -->
+<div class="seite">
+
+  <h1>Projektwissen festhalten <span class="sub">— ohne daran zu denken</span></h1>
+  <p class="lead">Zwei Claude-Skills, die zusammenarbeiten. Diese Anleitung zeigt, was sie tun,
+  wie du sie einrichtest und was danach im Alltag passiert.</p>
+
+  <div class="karte">
+    <b>Das Problem:</b> Ihr klärt etwas Wichtiges im Chat — warum ihr Weg A statt B geht, wie ein
+    Teil aufgebaut ist. Zwei Wochen später weiß es niemand mehr, und der nächste Chat fängt bei null an.<br>
+    <b>Die Lösung:</b> Claude schreibt es in Dateien im Projekt — automatisch, im richtigen Moment.
+    Jeder neue Chat und jede Kollegin liest es von dort.
+  </div>
+
+  <div class="glossar">
+    <b>Zwei Begriffe vorab:</b> Ein <b>Skill</b> ist ein fertiger Arbeitsablauf, den du mit einem
+    Schrägstrich aufrufst, z.&nbsp;B. <code>/decision-records</code>. Ein <b>Hook</b> ist eine
+    automatische Regel, die in bestimmten Momenten von selbst anspringt — du musst nichts tippen.
+  </div>
+
+  <h2>Die zwei Skills — und warum es zwei sind</h2>
+  <div class="zwei">
+    <div class="skill a">
+      <span class="cmd">/decision-records</span>
+      <span class="frage">„Warum haben wir das so entschieden?“</span>
+      <ul>
+        <li>Diese Antwort steht <b>nirgends im Code</b> — nur in deinem Kopf.</li>
+        <li>Deshalb <b>fragt er dich</b>: Was war die Alternative? Warum habt ihr sie verworfen?</li>
+        <li>Schreibt das Ergebnis mit Datum und Namen fest.</li>
+      </ul>
+    </div>
+    <div class="skill b">
+      <span class="cmd">/doku-update-sync</span>
+      <span class="frage">„Stimmt die Doku noch mit dem Projekt überein?“</span>
+      <ul>
+        <li>Das <b>sieht Claude selbst</b> an euren Änderungen.</li>
+        <li>Deshalb <b>fragt er nicht</b>, sondern schreibt es still mit.</li>
+        <li>Sorgt außerdem dafür, dass das alles von allein passiert.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>Wie sie zusammenarbeiten</h2>
+  <div class="ablauf">
+    <div class="reihe">
+      <span class="kasten a"><b>/decision-records</b>beim ersten Mal im Projekt</span>
+      <span class="pfeil">▶</span>
+      <span class="kasten b"><b>richtet /doku-update-sync ein</b>Automatik, Regeln, Doku-Dateien</span>
+      <span class="note">Ein Befehl — beide Skills sind startklar.</span>
+    </div>
+    <div class="reihe">
+      <span class="kasten b"><b>Automatik merkt: da war was</b>nach Commit, Aufgabe, Session-Ende</span>
+      <span class="pfeil">▶</span>
+      <span class="kasten b"><b>Claude schreibt still mit</b>was er selbst sehen kann</span>
+      <span class="note">Du merkst davon normalerweise nichts.</span>
+    </div>
+    <div class="reihe">
+      <span class="kasten b"><b>Das „Warum“ fehlt</b>Claude kann es nicht ableiten</span>
+      <span class="pfeil">▶</span>
+      <span class="kasten a"><b>/decision-records fragt dich</b>kurz, gezielt, dann ist Ruhe</span>
+      <span class="note">Der einzige Moment, in dem du etwas tust.</span>
+    </div>
+  </div>
+
+  <h2><span class="nr">1</span>Einmalig: Skills aktivieren</h2>
+  <p>Die Skills liegen bereits in unserer Organisation. Jede Person schaltet sie einmal im eigenen
+  Profil frei: <b>claude.ai → Einstellungen → Skills</b> → <code>decision-records</code> und
+  <code>doku-update-sync</code> einschalten.</p>
+  <p><b>Test:</b> In Claude Code <code>/</code> tippen. Stehen beide Namen in der Liste, bist du fertig.</p>
+
+  <h2><span class="nr">2</span>Pro Projekt: einmal einrichten</h2>
+  <p>Claude Code im Projektordner starten und eingeben:</p>
+<pre>/decision-records</pre>
+  <p>Claude sieht sich das Projekt an und <b>stellt dir Fragen</b> — erst zur Entscheidung selbst,
+  dann dazu, welche Doku dieses Projekt überhaupt braucht und was als wichtig gilt (z.&nbsp;B.
+  „Änderungen an den Workflows ja, Notizordner nein“). Am Ende zeigt er alles und fragt, ob er es
+  speichern darf. <b>Nichts passiert ohne dein Ja.</b></p>
+
+  <div class="fuss"><span>Projektwissen festhalten · Kurzanleitung</span><span>Seite 1 von 2</span></div>
+</div>
+
+<!-- ========================= SEITE 2 ========================= -->
+<div class="seite">
+
+  <h1>Der Alltag danach</h1>
+  <p class="lead">Kurz gesagt: meistens merkst du gar nichts. Genau das ist der Punkt.</p>
+
+  <h2>Wann die Automatik nachschaut</h2>
+  <table>
+    <tr><th>Moment</th><th>Was passiert</th></tr>
+    <tr><td>Nach einem Commit</td><td>Still. Du merkst nichts, außer es gab wirklich etwas Wichtiges.</td></tr>
+    <tr><td>Aufgabe erledigt</td><td>Still. Der Moment, in dem das Wissen am frischesten ist.</td></tr>
+    <tr><td>Am Ende der Session</td><td>Still. Damit nichts verloren geht, bevor du zumachst.</td></tr>
+    <tr><td>Vor <code>git push</code></td><td>Fehlt Doku, <b>ergänzt Claude sie sofort selbst</b> — danach läuft der Push durch.</td></tr>
+  </table>
+
+  <div class="karte">
+    <b>Wichtig:</b> Gibt es nichts zu dokumentieren, sagt die Automatik <b>gar nichts</b>. Kein
+    „alles in Ordnung“, keine Rückfrage. Sie meldet sich nur, wenn sie wirklich etwas beizutragen hat.
+  </div>
+
+  <h2>Wann Claude fragt — und wann nicht</h2>
+  <div class="zwei">
+    <div class="skill b">
+      <h3>Er schreibt allein</h3>
+      <p style="margin:0; font-size:8.9pt;">Alles, was er im Projekt sehen kann: ein neuer Baustein,
+      eine neue Bibliothek, ein geändertes Datenmodell, ein überholter Stand.</p>
+    </div>
+    <div class="skill a">
+      <h3>Er fragt nach</h3>
+      <p style="margin:0; font-size:8.9pt;">Nur das <b>Warum</b>: Warum so und nicht anders? Was habt
+      ihr bewusst <i>nicht</i> gemacht? Das steht nirgends — nur in deinem Kopf.</p>
+    </div>
+  </div>
+
+  <h2>Wenn der Push angehalten wird — du musst nichts tun</h2>
+  <p>Dann fehlt Doku zu etwas, das du geändert hast. Claude fragt dich <b>nicht</b>, ob er das
+  nachholen soll — er legt sofort los, schreibt die Doku, speichert sie und pusht dann normal weiter.
+  Meistens dauert das unter einer Minute, und du siehst nur eine kurze Notiz, was ergänzt wurde.</p>
+<pre><span class="c"># Was du eingibst</span>
+git push
+
+<span class="c"># Was von allein passiert</span>
+Doku wird ergänzt  →  gespeichert  →  Push läuft durch</pre>
+  <p style="font-size:8.9pt; color:#69727f;">Nur falls eine Änderung wirklich gar keine Doku braucht,
+  gibt es eine bewusste Abkürzung: <code>DOC_SYNC_SKIP=1 git push</code>. Die wählst du selbst —
+  Claude benutzt sie nie von sich aus.</p>
+
+  <h2>Der eigentliche Gewinn: jeder neue Chat kennt das Projekt</h2>
+  <p>Beim Einrichten trägt Claude einen Verweis in die Datei <code>CLAUDE.md</code> ein — die einzige
+  Datei, die er in <b>jedem neuen Chat automatisch liest</b>. Von dort findet er die Entscheidungen
+  und den aktuellen Stand selbst.</p>
+  <p>Du musst also <b>nicht im selben Chat bleiben</b> und nichts zweimal erklären. Das gilt auch für
+  alle anderen im Team und auch noch in einem halben Jahr.</p>
+
+  <div class="karte warn">
+    <b>Nervt die Automatik?</b> Dann ist eingestellt, dass zu viel als wichtig gilt — nicht die Idee
+    ist falsch. Sag es Claude einfach im Chat („der Sync meldet sich zu oft wegen X“), er passt die
+    Einstellung an. Jeder Moment lässt sich auch einzeln abschalten.
+  </div>
+
+  <div class="karte">
+    <b>Der kürzeste Weg zum Merken:</b> Du brauchst nur <code>/decision-records</code>, wenn ihr etwas
+    entschieden habt — alles Übrige läuft von allein. Und wenn du unsicher bist, frag Claude im
+    Projekt: <i>„Wie ist der Doku-Sync hier eingestellt?“</i>
+  </div>
+
+  <div class="fuss"><span>Fragen? Melde dich bei Frederik.</span><span>Seite 2 von 2</span></div>
+</div>
+
+</body>
+</html>

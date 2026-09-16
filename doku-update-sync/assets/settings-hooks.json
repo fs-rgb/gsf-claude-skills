@@ -1,0 +1,51 @@
+{
+  "_hinweis": "Vorlage fuer <repo>/.claude/settings.json (committed, NICHT settings.local.json — sonst greift im Team nichts). Existiert die Datei bereits, nur den 'hooks'-Block hineinmischen, nie ersetzen. Auf macOS/Linux stattdessen: \"command\": \".claude/hooks/doc-sync-gate.sh check\" bzw. \"... push\". Hooks laufen mit dem Repo-Root als Arbeitsverzeichnis, deshalb relative Pfade.",
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode push",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode check",
+            "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode check",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode check",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
