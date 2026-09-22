@@ -12,10 +12,15 @@ set -uo pipefail
 MODE="${1:-check}"
 silent() { exit 0; }
 
-command -v jq >/dev/null 2>&1 || {
-  echo "[doku-update-sync] Hook uebersprungen: jq nicht installiert (brew/apt install jq)." >&2
-  exit 0
-}
+# Ohne jq ist der gesamte Mechanismus wirkungslos. Mit Exit 0 wuerde das nie auffallen -
+# eine stderr-Zeile bei Exit 0 erreicht Claude nicht, der Hook waere monatelang stumm tot.
+# Deshalb: im push-Modus Exit 0 (eine fehlende Abhaengigkeit darf nie einen Push blockieren),
+# im check-Modus Exit 2, damit der defekte Zustand sichtbar wird.
+if ! command -v jq >/dev/null 2>&1; then
+  [ "$MODE" = "push" ] && exit 0
+  echo "[doku-update-sync] Hook wirkungslos: jq ist nicht installiert (brew install jq bzw. apt install jq). Bis dahin prueft nichts, ob die Doku zum Code passt." >&2
+  exit 2
+fi
 
 PAYLOAD="$(cat 2>/dev/null || true)"
 jqp() { [ -n "$PAYLOAD" ] && printf '%s' "$PAYLOAD" | jq -r "$1" 2>/dev/null || true; }
@@ -171,5 +176,10 @@ Ist-Stand noch trifft, und schreibe faktisch Ableitbares ohne Rueckfrage fort. F
 eine Entscheidung erkennbar ist, deren Begruendung nicht aus dem Diff hervorgeht - dann an
 'decision-records' uebergeben. Ist nichts zu aendern, aktualisiere nur docs/decisions/.last-sync
 und erwaehne es nicht weiter.
+
+Die Dateiliste ist dabei nur der Einstieg, nicht der Umfang (Schritt Y3a): nimm auch mit, was in
+dieser Session erarbeitet wurde und in keinem Diff steht - gescheiterte Ansaetze samt Ursache,
+Umgebungsbeschraenkungen, die den gewaehlten Weg erzwungen haben, Messwerte, widerlegte Annahmen.
+Den User dazu nicht befragen; das steht im Verlauf.
 EOF
 exit 2

@@ -30,7 +30,7 @@ Sie greifen ineinander:
                  v
            doku-update-sync   schreibt still, was er selbst sehen kann
                  |
-                 +--> fehlt das "Warum"?  -->  decision-records fragt nach
+                 +--> fehlt das "Warum"?  -->  decision-records haelt es fest
 ```
 
 Ein Befehl genügt: `/decision-records`. Alles Weitere richtet sich selbst ein.
@@ -39,7 +39,7 @@ Ein Befehl genügt: `/decision-records`. Alles Weitere richtet sich selbst ein.
 
 ```
 projektwissen/
-    decision-records/SKILL.md      Entscheidungen festhalten (Ask-until-clear)
+    decision-records/SKILL.md      Entscheidungen festhalten (leise, Annahme statt Rückfrage)
     doku-update-sync/SKILL.md      Doku aktuell halten + Automatik betreiben
     doku-update-sync/assets/       Dateien, die das Setup ins Projekt legt:
         doc-sync-gate.ps1            Hook-Skript (Windows)

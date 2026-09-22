@@ -254,5 +254,10 @@ Ist-Stand noch trifft, und schreibe faktisch Ableitbares ohne Rueckfrage fort. F
 eine Entscheidung erkennbar ist, deren Begruendung nicht aus dem Diff hervorgeht - dann an
 'decision-records' uebergeben. Ist nichts zu aendern, aktualisiere nur docs/decisions/.last-sync
 und erwaehne es nicht weiter.
+
+Die Dateiliste ist dabei nur der Einstieg, nicht der Umfang (Schritt Y3a): nimm auch mit, was in
+dieser Session erarbeitet wurde und in keinem Diff steht - gescheiterte Ansaetze samt Ursache,
+Umgebungsbeschraenkungen, die den gewaehlten Weg erzwungen haben, Messwerte, widerlegte Annahmen.
+Den User dazu nicht befragen; das steht im Verlauf.
 "@)
 exit 2

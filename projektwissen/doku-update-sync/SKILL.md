@@ -7,9 +7,9 @@ description: >
   Clone bekommen. Leitet den Doku-Umfang dabei leise aus dem Repo-Kontext ab und fragt nur bei
   schwer rückgängig zu machenden Punkten nach (Push-Gate-Härtegrad, Hook-Aktivierung). Bei allen
   weiteren Läufen
-  (Sync-Modus, meist von einem Hook nach Commit/Aufgabenende/Session-Ende ausgelöst) prüft er
-  still, ob es doku-relevantes Delta gibt, schreibt faktisch Ableitbares ohne Rückfrage fort und
-  fragt nur bei echter Unklarheit nach. Nutze diesen Skill, wenn ein Repo noch keinen
+  (Sync-Modus, meist von einem Hook nach Aufgabenende/Session-Ende oder vor git push ausgelöst)
+  prüft er still, ob es doku-relevantes Delta gibt, schreibt faktisch Ableitbares ohne Rückfrage
+  fort und fragt nur bei echter Unklarheit nach. Nutze diesen Skill, wenn ein Repo noch keinen
   Doku-Sync-Mechanismus hat, wenn ein Hook-Reminder auf ihn verweist, wenn Doku und Code
   auseinandergelaufen sind, oder wenn der decision-records-Skill die Automatisierung einrichten
   will. Schwesterskill von decision-records: der erfasst einzelne Entscheidungen, dieser hält den
@@ -33,7 +33,7 @@ erkennbar ist, deren Begründung nicht im Code steht — dafür gibt es `decisio
 |---|---|---|
 | Frage | „Warum haben wir uns so entschieden?" | „Beschreibt die Doku noch, was tatsächlich da ist?" |
 | Auslöser | Eine Entscheidung ist gefallen | Ein Hook feuert, oder Doku ist gedriftet |
-| Interaktion | Immer Ask-until-clear | Standardmäßig stumm, fragt nur im Ausnahmefall |
+| Interaktion | Leise: plausibel annehmen, Annahme im Eintrag vermerken — Rückfrage nur bei schwer Rückgängigem | Standardmäßig stumm, fragt nur im Ausnahmefall |
 | Zuständig für Hooks | nein — delegiert hierher | **ja** — betreibt die Automatisierung für beide |
 
 `decision-records` Schritt 5 ruft diesen Skill auf. Erkennt dieser Skill im Delta eine
@@ -47,7 +47,7 @@ gegenseitige Rekursion: pro Lauf höchstens eine Übergabe je Richtung.
 Existiert im Repo-Root `docs/decisions/.doc-sync.json`?
 
 - **Nein → Setup-Modus** (Schritte S1–S6). Standardmäßig leise — aus S1 ableiten und annehmen;
-  Rückfragen nur zu Punkten, die schwer rückgängig zu machen sind (siehe S2, S4b, S5).
+  Rückfragen nur zu Punkten, die schwer rückgängig zu machen sind (S2 Punkt 5 und S5).
 - **Ja → Sync-Modus** (Schritte Y1–Y7). Still, hier wird bewusst fast nie gefragt.
 
 Wurde der Skill von einem Hook ausgelöst (Reminder-Text im Kontext) und die Config fehlt trotzdem,
@@ -92,16 +92,22 @@ rückgängig zu machen ist:
    Verzeichnisse als `ignore` vorbelegen, sonst breit als relevant behandeln (leere `relevant`-Liste).
    Nur nachfragen, wenn das Projekt einen ungewöhnlichen Aufbau hat, der sich nicht aus Historie
    oder Manifesten erschließt.
-4. **Welche Events sollen auslösen?** Alle vier (`postCommit`, `taskDone`, `stop`, `prePush`) als
-   Default setzen, ohne zu fragen — sie sind einzeln in der Config abwählbar, falls sich später
-   zeigt, dass eines zu oft/nie feuert.
+4. **Welche Events sollen auslösen?** Default ohne Rückfrage: `taskDone`, `stop`, `prePush`.
+   **`postCommit` bleibt aus** — es ist das teuerste und redundanteste Event: Claude Code kann
+   Hooks nur nach Tool-*Namen* filtern, nicht nach Kommandoinhalt, also müsste für `postCommit`
+   nach **jedem** Bash-Aufruf ein eigener Prozess starten, der dann meist nur feststellt, dass gar
+   kein `git commit` vorlag. In einer Session mit ein paar hundert Bash-Calls summiert sich das auf
+   Minuten reiner Prozessstartzeit — während `stop` und `prePush` denselben Stand ohnehin abdecken.
+   Wer es trotzdem will, setzt in der Config `postCommit: true` **und** trägt den `PostToolUse`-
+   Eintrag mit Matcher `Bash|PowerShell` in `.claude/settings.json` nach; der Config-Schalter allein
+   spart den Prozessstart nicht, weil das Skript dafür schon laufen muss.
 5. **Härtegrad des Push-Gates — hier immer nachfragen:** blockierend vs. nur Warnung ist die eine
    Stelle in diesem Skill, an der eine falsche Annahme sofort spürbar wird (blockierter `git push`).
    Default-Vorschlag „blockierend", aber als echte Frage stellen, nicht annehmen.
 
-Damit ist S2 inhaltlich abgeschlossen — die einzige tatsächliche Interaktion ist Punkt 5, plus S4b/S5
-weiter unten (Hook-Hardwiring und -Aktivierung), die ohnehin schon als Pflichtfragen gelten, weil
-sie git-Verhalten verändern.
+Damit ist S2 inhaltlich abgeschlossen — die einzige tatsächliche Interaktion ist Punkt 5, plus S5
+weiter unten (Hook-Aktivierung), die ohnehin schon als Pflichtfrage gilt, weil sie git-Verhalten
+verändert.
 
 ## S3 — Doku-Struktur anlegen
 
@@ -143,7 +149,7 @@ Entscheidungen und Ist-Stand liegen in diesen Dateien. Lies die relevante, bevor
 - `docs/decisions/RULES.md` — geltende Regeln (IMMER/NIEMALS). Diese gelten ohne Rückfrage.
 - `docs/decisions/QUALITY_DECISIONS.md` — Produkt-/Prozess-Entscheidungen
 
-Automatik: `.claude/hooks/doc-sync-gate` meldet sich nach Commit, Aufgabenende und Session-Ende,
+Automatik: `.claude/hooks/doc-sync-gate` meldet sich nach Aufgabenende und Session-Ende,
 wenn etwas Doku-Relevantes undokumentiert ist, und blockiert `git push`.
 ```
 
@@ -254,8 +260,29 @@ Für jede relevante Änderung entscheiden, welcher Typ vorliegt:
 | **Irrelevant** | Formatierung, Refactoring ohne Strukturwirkung, Testdaten | ignorieren, nicht erwähnen |
 
 Im Zweifel zwischen faktisch und begründungsbedürftig: **faktisch behandeln**. Lieber ein
-knapper korrekter Ist-Stand-Satz als eine unnötige Rückfrage — der Ask-until-clear-Loop gehört
-`decision-records` und ist dort teuer erkauft.
+knapper korrekter Ist-Stand-Satz als eine unnötige Rückfrage — die Begründungsarbeit gehört
+`decision-records`.
+
+### Y3a — Die Dateiliste ist der Einstieg, nicht der Umfang
+
+Der Hook kann nur erkennen, **welche Dateien** sich geändert haben. Das ist ein schwacher Stellvertreter
+für das, was eigentlich festgehalten werden soll: was in dieser Session **herausgefunden** wurde. Das
+Wertvollste steht typischerweise nicht im Diff, sondern im Verlauf — ein Ansatz, der nicht funktioniert
+hat und warum; eine Umgebungsbeschränkung, über die der nächste Versuch genauso stolpern wird; ein
+Messwert; ein bewusst verworfener Weg. Eine Session, die viel klärt und wenig ändert, erzeugt fast kein
+Delta, obwohl sie den größten Doku-Bedarf hat.
+
+Deshalb beim Sync **zusätzlich zum Delta** den Sessionverlauf durchgehen und dabei diese Fragen stellen:
+
+- Wurde etwas versucht, das **nicht** funktioniert hat — und ist die Ursache bekannt? (Gehört zum
+  Eintrag des betroffenen Artefakts, sonst probiert es der Nächste erneut.)
+- Gibt es eine **Umgebungs- oder Plattformbeschränkung**, die den gewählten Weg erzwungen hat?
+- Wurden **Zahlen gemessen** (Laufzeit, Kosten, Trefferquote), die eine spätere Bewertung tragen?
+- Wurde eine Annahme **widerlegt**, die in der Doku noch steht?
+
+Was hier auftaucht, wird nach denselben Regeln behandelt wie Delta aus Y1: faktisch → Y4, begründungs-
+bedürftig → Y5. Fällt nichts an, bleibt es bei der Dateiliste — kein Zwang, etwas zu finden, und
+ausdrücklich **keine Rückfrage an den User**, was er denn gelernt habe.
 
 ## Y4 — Faktisches Update schreiben (ohne Rückfrage)
 
@@ -281,8 +308,7 @@ Wurde der Lauf durch den blockierten `git push` ausgelöst, gilt zusätzlich:
    weil das Delta seit `.last-sync` leer ist.
 4. **Den Push nicht für eine Rückfrage anhalten.** Fehlt zu einer Änderung die Begründung, kommt sie
    nach Y5 als Platzhalter unter `## Offen / noch zu begründen` und wird **nach** dem Push in einem
-   Satz erwähnt. Der Ask-until-clear-Loop von `decision-records` läuft dann später, nicht mitten im
-   Push.
+   Satz erwähnt. `decision-records` arbeitet die Begründung später auf, nicht mitten im Push.
 5. **Den Bypass nicht selbst wählen.** `DOC_SYNC_SKIP=1` gehört dem User. Ihn zu benutzen, um den
    Gate schneller loszuwerden, hebelt genau den Mechanismus aus, für den er gebaut wurde.
 
@@ -292,7 +318,8 @@ Config) — das melden statt den Bypass zu ziehen oder es erneut zu versuchen.
 ## Y5 — Entscheidung erkannt → übergeben
 
 `decision-records` aufrufen, mit dem konkreten Signal als Kontext („neue Dependency X ersetzt Y",
-„Modul Z entfernt"). Dort läuft der Ask-until-clear-Loop. Ist der User nicht erreichbar (Hook-Lauf
+„Modul Z entfernt"). Dort wird die Begründung erfasst — leise, mit plausibler Annahme statt
+Rückfrage, sofern nichts schwer Rückgängiges betroffen ist. Ist der User nicht erreichbar (Hook-Lauf
 ohne Interaktionsmöglichkeit): die offene Frage in `docs/decisions/QUALITY_DECISIONS.md` unter
 einem Abschnitt `## Offen / noch zu begründen` als Platzhalter mit Datum und Signal festhalten,
 statt sie verfallen zu lassen. Nie eine Begründung erfinden.
@@ -334,13 +361,17 @@ Aufzählungsblock, keine Nachfrage, ob es so recht war. Wurde an `decision-recor
 
 - Sich im Sync-Modus bemerkbar machen, ohne dass es relevantes Delta gab.
 - Im Sync-Modus fragen, was aus dem Diff ableitbar ist.
+- Den Sync auf die Dateiliste des Hooks beschränken und das übergehen, was in der Session erarbeitet
+  wurde, aber in keinem Diff steht (Y3a) — gescheiterte Ansätze samt Ursache, erzwingende
+  Umgebungsbeschränkungen, Messwerte, widerlegte Annahmen.
+- Den User im Sync-Modus fragen, was er in dieser Session gelernt habe (Y3a) — das steht im Verlauf.
 - Eine Begründung („Warum", „Was nicht") erfinden, statt an `decision-records` zu übergeben oder als
   offen zu markieren.
 - Bestehende Entscheidungs-Einträge überschreiben oder löschen — auch nicht, wenn sie überholt sind.
 - Doku-Artefakte anlegen, die weder aus S1 ableitbar noch offensichtlich sinnvoll sind.
 - In S2 eine Rückfrage-Kaskade über Punkte 1–4 starten, obwohl eine Annahme aus S1 gereicht hätte
-  — Punkt 5 (Push-Gate-Härtegrad) und S4b/S5 (Hook-Hardwiring/-Aktivierung) bleiben die einzigen
-  planmäßigen Rückfragen im Setup-Modus.
+  — Punkt 5 (Push-Gate-Härtegrad) und S5 (Hook-Aktivierung) bleiben die einzigen planmäßigen
+  Rückfragen im Setup-Modus.
 - Hooks anlegen, aktivieren oder committen ohne explizite Zustimmung.
 - Die Doku-Struktur anlegen, ohne den Lesepfad in `CLAUDE.md` zu sichern (S3a) — eine Doku, auf
   die nichts verweist, wird in einer neuen Session nicht gelesen und war damit umsonst.
@@ -407,8 +438,11 @@ Windows, sonst Bash.
       `doku-update-sync` im Sync-Modus **sofort und ohne Rückfrage** auszuführen; im Push-Fall
       zusätzlich: Doku samt `.last-sync` committen, Push unverändert wiederholen, für eine fehlende
       Begründung den Push nicht anhalten. Bypass nennen, aber als Sache des Users.
+    - `<Text>` sagt außerdem, dass die Dateiliste nur der Einstieg ist und der Sessionverlauf
+      mitzunehmen ist (Y3a) — sonst arbeitet der Sync strikt am Diff und verliert genau das Wissen,
+      das in keiner Datei steht.
 
-**Zwei Fallstricke, die das Skript sonst stillschweigend unbrauchbar machen:**
+**Drei Fallstricke, die das Skript sonst stillschweigend unbrauchbar machen:**
 
 - **PowerShell:** `$ErrorActionPreference` **nicht** auf `Stop` setzen. Windows PowerShell verpackt
   jede stderr-Zeile eines nativen Programms in einen Fehler, und `git` warnt routinemäßig
@@ -417,6 +451,11 @@ Windows, sonst Bash.
   per `try/catch` und `$LASTEXITCODE` behandeln.
 - **Ausgabetexte rein ASCII halten** (`ae`/`oe`/`ue`, `-` statt Gedankenstrich). Sonst kommt der
   Text durch die Konsolen-Codepage verstümmelt bei Claude an.
+- **Bash-Variante: fehlendes `jq` darf nicht mit Exit 0 enden.** Die Variante parst den Payload mit
+  `jq`; fehlt es, ist der gesamte Mechanismus wirkungslos. Mit Exit 0 fällt das nie auf — eine
+  stderr-Zeile bei Exit 0 erreicht Claude nicht. Richtig ist: im Modus `push` **Exit 0** (eine
+  fehlende Abhängigkeit darf niemals den Push blockieren), im Modus `check` **Exit 2** mit klarem
+  Hinweis, dass der Hook bis zur Installation nichts prüft.
 
 **Meldungstexte nie erfinden, sondern sinngemäß wie oben formulieren** — sie sind der eigentliche
 Wirkmechanismus: Der Hook blockiert nur, gearbeitet wird aufgrund dieses Textes.
