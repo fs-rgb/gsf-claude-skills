@@ -83,16 +83,22 @@ kommt oder direkt in diesem Repo committet wird. Ein `pre-commit`-Hook sichert d
 nach `projektwissen/_archiv/<skill>/<Zeitstempel>/`, bevor der Commit entsteht — der Snapshot ist
 also Teil desselben Commits wie die Änderung, nicht nachträglich angehängt.
 
-**Nach einem frischen Clone dieses Repos einmalig installieren** (Hooks werden von Git nie
-mitgeclont):
+**Aktueller Stand ehrlich benannt:** Der Hook liegt als Vorlage in `claude-skills/dist-hooks/`, aber
+dieses Repo ist mein privates, nicht veröffentlichtes Quell-Repo — wer `gsf-claude-skills` frisch
+klont (etwa eine Kollegin, ohne Zugriff auf `claude-skills`), kann `install.ps1` also **nicht**
+erreichen und bekommt die Archivierung damit nicht automatisch. Für mich selbst (beide Repos liegen
+nebeneinander):
 
 ```powershell
-& "C:\Users\<du>\Projects\claude-skills\dist-hooks\install.ps1"
+& "C:\Users\FrederikSarhane\Projects\claude-skills\dist-hooks\install.ps1"
 ```
 
-Ohne diesen Schritt greift weder das Archiv noch die Drift-Prüfung vor `git push` (siehe README des
-Quell-Repos `claude-skills`). Ein geänderter Skill wird dann committet, ohne dass die alte Fassung
-gesichert wird — das fällt nicht auf, bis sie einmal gebraucht wird.
+Ohne diesen Schritt greift weder das Archiv noch die Drift-Prüfung vor `git push`. Ein geänderter
+Skill wird dann committet, ohne dass die alte Fassung gesichert wird — das fällt nicht auf, bis sie
+einmal gebraucht wird. Echte Portabilität für externe Beitragende (Hook-Kopie direkt in diesem Repo,
+ohne Abhängigkeit von `claude-skills`) ist noch offen — bewusst nicht heute nachgezogen, um nicht
+eine fünfte synchron zu haltende Kopie zu schaffen, ohne dass es bisher einen zweiten Beitragenden
+gibt, der sie bräuchte.
 
 ## Mitentwickeln
 
