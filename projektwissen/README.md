@@ -75,6 +75,25 @@ CLAUDE.md                          Verweisblock — sorgt dafür, dass jeder neu
 Welche dieser Dateien tatsächlich angelegt werden, entscheidet ein kurzes Interview beim ersten
 Lauf. Nichts davon passiert ohne ausdrückliche Zustimmung.
 
+## Versionierung: alte Fassungen gehen nicht verloren
+
+Jede Änderung an einem Skill-Ordner hier (`decision-records/`, `doku-update-sync/`) archiviert
+automatisch dessen vorherige Fassung — egal ob die Änderung über `sync-skills.ps1` aus der Quelle
+kommt oder direkt in diesem Repo committet wird. Ein `pre-commit`-Hook sichert den Stand aus `HEAD`
+nach `projektwissen/_archiv/<skill>/<Zeitstempel>/`, bevor der Commit entsteht — der Snapshot ist
+also Teil desselben Commits wie die Änderung, nicht nachträglich angehängt.
+
+**Nach einem frischen Clone dieses Repos einmalig installieren** (Hooks werden von Git nie
+mitgeclont):
+
+```powershell
+& "C:\Users\<du>\Projects\claude-skills\dist-hooks\install.ps1"
+```
+
+Ohne diesen Schritt greift weder das Archiv noch die Drift-Prüfung vor `git push` (siehe README des
+Quell-Repos `claude-skills`). Ein geänderter Skill wird dann committet, ohne dass die alte Fassung
+gesichert wird — das fällt nicht auf, bis sie einmal gebraucht wird.
+
 ## Mitentwickeln
 
 Änderungen an den Hook-Skripten bitte gegen die Fälle in *Anhang A* von
