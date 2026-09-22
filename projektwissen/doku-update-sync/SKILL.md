@@ -2,9 +2,11 @@
 name: doku-update-sync
 description: >
   Hält die Projektdokumentation eines Repos automatisch aktuell und synchron zum Code — richtet
-  beim ersten Lauf (Setup-Modus) nach einem Interview über den gewünschten Doku-Umfang die
-  Doku-Struktur, eine Relevanz-Konfiguration, Regeln und Claude-Code-Hooks ein und committet sie
-  ins Repo, sodass auch Kolleginnen und Kollegen sie beim Clone bekommen. Bei allen weiteren Läufen
+  beim ersten Lauf (Setup-Modus) die Doku-Struktur, eine Relevanz-Konfiguration, Regeln und
+  Claude-Code-Hooks ein und committet sie ins Repo, sodass auch Kolleginnen und Kollegen sie beim
+  Clone bekommen. Leitet den Doku-Umfang dabei leise aus dem Repo-Kontext ab und fragt nur bei
+  schwer rückgängig zu machenden Punkten nach (Push-Gate-Härtegrad, Hook-Aktivierung). Bei allen
+  weiteren Läufen
   (Sync-Modus, meist von einem Hook nach Commit/Aufgabenende/Session-Ende ausgelöst) prüft er
   still, ob es doku-relevantes Delta gibt, schreibt faktisch Ableitbares ohne Rückfrage fort und
   fragt nur bei echter Unklarheit nach. Nutze diesen Skill, wenn ein Repo noch keinen
@@ -44,7 +46,8 @@ gegenseitige Rekursion: pro Lauf höchstens eine Übergabe je Richtung.
 
 Existiert im Repo-Root `docs/decisions/.doc-sync.json`?
 
-- **Nein → Setup-Modus** (Schritte S1–S6). Dialogisch, hier wird bewusst viel gefragt.
+- **Nein → Setup-Modus** (Schritte S1–S6). Standardmäßig leise — aus S1 ableiten und annehmen;
+  Rückfragen nur zu Punkten, die schwer rückgängig zu machen sind (siehe S2, S4b, S5).
 - **Ja → Sync-Modus** (Schritte Y1–Y7). Still, hier wird bewusst fast nie gefragt.
 
 Wurde der Skill von einem Hook ausgelöst (Reminder-Text im Kontext) und die Config fehlt trotzdem,
@@ -71,50 +74,34 @@ Lesen, nicht raten:
 
 Gefundene Doku wird **wiederverwendet und im bestehenden Stil fortgeführt** — nie ersetzt, nie dupliziert.
 
-## S1a — Ist das überhaupt ein Git-Repo? (sonst läuft die Automatik ins Leere)
+## S2 — Doku-Umfang ableiten (Pflicht, aber leise)
 
-`git rev-parse --show-toplevel` ausführen. Schlägt es fehl, ist der Ordner kein Repo — der
-Normalfall, wenn jemand ein frisches Projekt anlegt und diesen Skill als Erstes laufen lässt.
+Kein mehrteiliges Interview mehr als Standardfall — der User soll kaum merken, dass der Skill
+gerade läuft. Aus S1 ableiten und **annehmen statt fragen**, sofern der Punkt nicht schwer
+rückgängig zu machen ist:
 
-Ohne Repo ist **die gesamte Automatisierung wirkungslos, ohne dass es auffällt**:
+1. **Welche Doku-Artefakte werden gepflegt?** Aus S1 ableiten (was existiert, welche Pfade sich in
+   der Historie oft ändern) und **bewusst klein wählen** — jedes Artefakt ist Pflegeaufwand, lieber
+   drei gepflegte als acht verwaiste. Standard, falls nichts Gegenteiliges erkennbar ist:
+   Architektur/Ist-Stand, Entscheidungen, Regeln. Annahme im Abschluss-Report kurz benennen, nicht
+   vorab abfragen.
+2. **Wer liest das?** Aus dem Kontext ableiten (z. B. explizit als privates/persönliches Repo
+   beschrieben → „nur ich"; Repo mit mehreren Contributor:innen in der Historie → „internes Team").
+   Nur nachfragen, wenn beide Signale gleichzeitig vorliegen und sich widersprechen.
+3. **Was ist doku-relevant, was ist Rauschen?** Aus S1 ableiten: übliche Build-/Dependency-/Log-
+   Verzeichnisse als `ignore` vorbelegen, sonst breit als relevant behandeln (leere `relevant`-Liste).
+   Nur nachfragen, wenn das Projekt einen ungewöhnlichen Aufbau hat, der sich nicht aus Historie
+   oder Manifesten erschließt.
+4. **Welche Events sollen auslösen?** Alle vier (`postCommit`, `taskDone`, `stop`, `prePush`) als
+   Default setzen, ohne zu fragen — sie sind einzeln in der Config abwählbar, falls sich später
+   zeigt, dass eines zu oft/nie feuert.
+5. **Härtegrad des Push-Gates — hier immer nachfragen:** blockierend vs. nur Warnung ist die eine
+   Stelle in diesem Skill, an der eine falsche Annahme sofort spürbar wird (blockierter `git push`).
+   Default-Vorschlag „blockierend", aber als echte Frage stellen, nicht annehmen.
 
-- Das Hook-Skript beendet sich bei fehlendem Repo sofort mit Exit 0 — es feuert nie.
-- `.last-sync` kann keinen `HEAD`-SHA festhalten, das Delta ist nicht berechenbar.
-- Nichts lässt sich mitcommitten; wer das Projekt später clont, bekommt weder Doku noch Hooks.
-
-Deshalb **hier** fragen, nicht später: `git init` jetzt ausführen? (Vorschlag: ja)
-
-- **Ja** → `git init`, danach normal weiter. Der Commit am Ende des Setups enthält dann Doku, Hooks
-  und Skills zusammen.
-- **Nein** → Setup läuft durch, aber **S5 (Hooks) wird übersprungen**, statt eine tote Automatik zu
-  installieren. Im Abschluss-Report ausdrücklich benennen: Doku steht, die Automatik fehlt und
-  kommt erst mit `git init` plus erneutem Lauf dieses Skills.
-
-Fehlt zusätzlich `git config user.name` / `user.email`, einmalig nachfragen statt Attribution zu
-raten.
-
-## S2 — Interview: Was für Doku braucht dieses Projekt? (Pflicht)
-
-Mit `AskUserQuestion` (oder dem Interaktions-Tool der Umgebung). **Nicht generisch fragen** —
-Vorschläge aus S1 ableiten und zur Auswahl stellen, damit der User korrigiert statt erfindet.
-
-Mindestens zu klären:
-
-1. **Welche Doku-Artefakte werden gepflegt?** Vorauswahl aus dem, was in S1 gefunden wurde, plus
-   sinnvolle Ergänzungen. Typisch: Architektur/Ist-Stand, Entscheidungen, Regeln, Setup/Onboarding,
-   Datenmodell/Schema, Betrieb/Runbook, offene Baustellen. **Bewusst klein halten** — jedes Artefakt
-   ist Pflegeaufwand; lieber drei gepflegte als acht verwaiste.
-2. **Wer liest das?** Nur du / das interne Team / auch Externe. Bestimmt Tonfall und Detailtiefe und
-   gehört in die Config, damit spätere Syncs nicht daneben schreiben.
-3. **Was ist doku-relevant, was ist Rauschen?** Konkrete Pfade/Muster, gestützt auf die Historie aus
-   S1 — z. B. „Workflow-JSONs und `db/` ja, `scratch/` und reine Formatierung nein". Das wird zum
-   Relevanz-Filter des Hooks und entscheidet, wie oft er überhaupt anspringt.
-4. **Welche Events sollen auslösen?** Default-Vorschlag, jeweils begründet:
-   `nach git commit` (still), `Aufgabenende / TodoWrite vollständig` (still), `Session-Ende / Stop`
-   (still), `vor git push` (blockierend, mit Bypass). Alle vier sind einzeln abwählbar.
-5. **Härtegrad des Push-Gates:** blockierend (Default) oder nur Warnung.
-
-Wiederholen, bis keine offene Frage bleibt. Erst danach wird geschrieben.
+Damit ist S2 inhaltlich abgeschlossen — die einzige tatsächliche Interaktion ist Punkt 5, plus S4b/S5
+weiter unten (Hook-Hardwiring und -Aktivierung), die ohnehin schon als Pflichtfragen gelten, weil
+sie git-Verhalten verändern.
 
 ## S3 — Doku-Struktur anlegen
 
@@ -190,7 +177,7 @@ relevant oder irrelevant gilt.
    b) **Sonst von GitHub laden** (Normalfall, wenn der Skill ohne Assets verteilt wurde). Basis-URL:
 
       ```
-      https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/doku-update-sync/assets/
+      https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/doku-update-sync/assets/
       ```
 
       Gebraucht werden: `doc-sync-gate.ps1` **oder** `doc-sync-gate.sh` (je nach Betriebssystem),
@@ -207,26 +194,11 @@ relevant oder irrelevant gilt.
 2. **Registrieren** in `<repo>/.claude/settings.json` — **committed**, nicht `settings.local.json`,
    sonst greift bei Kolleginnen und Kollegen nichts. Vorlage: `settings-hooks.json` (siehe Punkt 1).
    Existiert die Datei bereits, wird der `hooks`-Block **hineingemischt**, nie ersetzt.
-3. **Beide Skills mitliefern:** diesen Skill nach `<repo>/.claude/skills/doku-update-sync/`
-   kopieren und mitcommitten — sonst laufen die Hooks im Team ins Leere, weil der Skill dort nicht
-   installiert ist. **`decision-records` genauso**, nach `<repo>/.claude/skills/decision-records/`:
-   der Sync-Modus übergibt bei begründungsbedürftigen Änderungen an ihn, und wer das Repo clont,
-   hat ihn sonst nicht.
-
-   Ist `decision-records` nicht als Datei greifbar — er läuft als installierter Skill, dessen
-   Ordner nicht im Dateisystem des Projekts liegt —, roh von der Quelle laden, mit derselben
-   Prüfung wie in Punkt 1b:
-
-   ```
-   https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/decision-records/SKILL.md
-   ```
-
-   Das Geladene muss mit `---` und `name: decision-records` beginnen — eine Fehlerseite käme sonst
-   unbemerkt als Skill im Repo an. Scheitert der Download, **nicht selbst nachbauen**: im
-   Abschluss-Report benennen, dass `decision-records` im Repo fehlt und nachgetragen werden muss.
-
-   Beide Kopien tragen in der Config unter `skillSource` ihre Herkunft
-   (`https://github.com/fs-rgb/gsf-claude-skills`), damit ein Update auffindbar bleibt.
+3. **Skill mitliefern:** diesen Skill nach `<repo>/.claude/skills/doku-update-sync/` kopieren und
+   mitcommitten — sonst laufen die Hooks im Team ins Leere, weil der Skill dort nicht installiert
+   ist. Falls `decision-records` genutzt wird, ebenso kopieren. Die Kopie trägt in der Config unter
+   `skillSource` ihre Herkunft (`https://github.com/fs-rgb/gsf-claude-skills`), damit ein Update
+   auffindbar bleibt.
 4. **Vorschlag zeigen, auf Bestätigung warten.** Nie ungefragt anlegen oder aktivieren.
 5. **Smoke-Test:** Skript einmal manuell mit leerem stdin aufrufen und prüfen, dass es bei sauberem
    Zustand mit Exit 0 und ohne Ausgabe endet. Ein Hook, der beim ersten echten Commit unerwartet
@@ -341,6 +313,15 @@ korrekt, weil genau dieser Stand geprüft wurde.
 Bei Merge-Konflikten auf dieser Datei gilt: den **älteren** SHA behalten. Lieber einmal zu viel
 prüfen als eine Lücke überspringen.
 
+**Sonderfall: Repo ohne jeden Commit** (frisches Setup, `git rev-parse HEAD` schlägt fehl). Dann
+`"sha": null` schreiben und **zwingend `reviewedAt` auf die tatsächliche aktuelle Uhrzeit setzen**
+(z. B. `date -u +%Y-%m-%dT%H:%M:%SZ`), nie auf Tagesbeginn oder einen anderen Platzhalter — das
+Gate-Skript vergleicht `reviewedAt` gegen die `LastWriteTime` jeder Datei, und ein zu früher
+Zeitstempel lässt frisch angelegte Setup-Dateien fälschlich wieder als „seit dem Sync geändert"
+gelten, wodurch der Hook bei jedem weiteren Ereignis erneut feuert, obwohl nichts Neues passiert
+ist. Sobald der erste echte Commit existiert, ersetzt der nächste Lauf `sha: null` durch die
+richtige SHA.
+
 ## Y7 — Rückmeldung
 
 Nur wenn tatsächlich etwas geschrieben wurde: **ein Satz**, welche Datei und was. Kein Report, kein
@@ -356,7 +337,10 @@ Aufzählungsblock, keine Nachfrage, ob es so recht war. Wurde an `decision-recor
 - Eine Begründung („Warum", „Was nicht") erfinden, statt an `decision-records` zu übergeben oder als
   offen zu markieren.
 - Bestehende Entscheidungs-Einträge überschreiben oder löschen — auch nicht, wenn sie überholt sind.
-- Doku-Artefakte anlegen, die im Setup-Interview nicht bestätigt wurden.
+- Doku-Artefakte anlegen, die weder aus S1 ableitbar noch offensichtlich sinnvoll sind.
+- In S2 eine Rückfrage-Kaskade über Punkte 1–4 starten, obwohl eine Annahme aus S1 gereicht hätte
+  — Punkt 5 (Push-Gate-Härtegrad) und S4b/S5 (Hook-Hardwiring/-Aktivierung) bleiben die einzigen
+  planmäßigen Rückfragen im Setup-Modus.
 - Hooks anlegen, aktivieren oder committen ohne explizite Zustimmung.
 - Die Doku-Struktur anlegen, ohne den Lesepfad in `CLAUDE.md` zu sichern (S3a) — eine Doku, auf
   die nichts verweist, wird in einer neuen Session nicht gelesen und war damit umsonst.

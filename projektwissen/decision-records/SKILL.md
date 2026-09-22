@@ -7,10 +7,12 @@ description: >
   Decision-Record-Struktur hat (Bootstrap), wenn gerade eine Architektur-/Tech-Stack-/Prozess-/
   qualitative Entscheidung getroffen wurde und festgehalten werden soll, wenn noch kein
   Automatisierungs-Hook für künftige Syncs existiert, oder wenn Claude ein entscheidungswürdiges
-  Signal erkennt (neue Dependency, neues Modul, Kurswechsel) und einen Sync vorschlägt. Klärt dabei
-  aktiv offene Fragen, bevor etwas geschrieben wird (Ask-until-clear). Die Automatisierung baut
-  dieser Skill nicht selbst: dafür übergibt er an den Schwesterskill doku-update-sync, der die
-  Hooks einrichtet, sie für beide betreibt und die übrige Doku aktuell hält.
+  Signal erkennt (neue Dependency, neues Modul, Kurswechsel) und einen Sync vorschlägt. Arbeitet
+  dabei standardmäßig leise — plausible Annahmen statt Rückfragen, sichtbar nur als Notiz im
+  Eintrag — und fragt aktiv nach nur, wenn eine Wirkung schwer rückgängig zu machen ist oder einem
+  bestehenden Eintrag widerspricht. Die Automatisierung baut dieser Skill nicht selbst: dafür
+  übergibt er an den Schwesterskill doku-update-sync, der die Hooks einrichtet, sie für beide
+  betreibt und die übrige Doku aktuell hält.
 ---
 
 # Skill: Decision Records
@@ -38,13 +40,37 @@ ein Eintrag nachweislich in keine bestehende passt):
 | Qualitativ/Prozess | `docs/decisions/QUALITY_DECISIONS.md` | Produkt-/UX-/Prozess-Entscheidungen, die keine Architektur sind |
 | Regeln | `docs/decisions/RULES.md` | **kein Log** — lebende Liste aktuell geltender Regeln, siehe Schritt 4a |
 
-## Schritt 3 — Klärungs-Loop (Ask-until-clear)
+## Schritt 3 — Minimal-invasiv klären (nicht: Ask-until-clear)
 
-Bevor irgendetwas geschrieben wird: mit `AskUserQuestion` (oder gleichwertigem Interaktions-Tool
-der jeweiligen Umgebung) gezielte, nicht-offensichtliche Rückfragen stellen — Alternativen,
-Trade-offs, „was bewusst nicht". Multiple-Choice anbieten, wo sinnvoll. Wiederholen, bis keine
-offene Frage mehr bleibt. Eine Entscheidung erst als vollständig behandeln, wenn Alternative und
-Ablehnungsgrund benennbar sind — sonst weiterfragen statt zu raten.
+**Default ist leise arbeiten.** Der Skill soll im Hintergrund laufen; der User soll möglichst
+selten merken, dass er gerade aktiv ist. Das Ziel „vollständig geklärt" wird nicht mehr über eine
+Frageschleife erreicht, sondern über plausible Annahmen, die transparent im Eintrag stehen.
+
+**Reihenfolge:**
+
+1. Erst aus dem bereits Gesagten ableiten: die ursprüngliche Nutzeranfrage, ein auslösendes Signal
+   aus `doku-update-sync`, bestehende Einträge und der Repo-Kontext. Was dort schon eindeutig
+   beantwortet ist, gilt als geklärt — nicht erneut fragen, nur weil eine Standardliste den Punkt
+   vorsieht (Beispiel: nennt die Anfrage bereits „technisch sowie qualitativ", ist „Architektur
+   oder auch Prozess?" bereits beantwortet).
+2. Für alles, was danach noch offen ist: **plausibel annehmen statt fragen.** Die Annahme kommt in
+   die `Warum`-Zeile des Eintrags, kurz und explizit als Annahme markiert (z. B. „Angenommen: nur
+   für den eigenen Gebrauch, da Repo als persönliches Testfeld beschrieben — bei Bedarf
+   korrigieren"). Der User kann das jederzeit im Nachhinein richtigstellen; das ist billiger, als
+   ihn vorher mit einer Frage aufzuhalten, deren Antwort ohnehin naheliegt.
+3. **Tatsächlich per `AskUserQuestion` (o. ä.) nachfragen nur, wenn mindestens eines zutrifft:**
+   - Die Wirkung ist **schwer/teuer rückgängig zu machen** (z. B. ein bestehender Eintrag soll
+     revidiert statt ergänzt werden; eine neue Kategorie-Datei würde die bestehende Taxonomie
+     erweitern; ein Regel-Hard-Wiring per Hook wird aktiviert, siehe Schritt 4b).
+   - Es gibt **keine plausible Annahme** — zwei gleichwertige, gegensätzliche Optionen ohne jeden
+     Hinweis im Kontext, welche gemeint ist, und eine falsche Annahme würde den Eintrag inhaltlich
+     verfälschen statt ihn nur unvollständig zu machen.
+   - Ein bestehender Eintrag würde **widersprochen**.
+4. Wenn nachgefragt wird: gezielt und knapp, Multiple-Choice wo sinnvoll, keine Fragerunde über
+   Punkte, die schon unter 1./2. geklärt sind.
+
+Ein Eintrag mit einer sauber benannten Annahme ist einem unvollständigen Eintrag immer vorzuziehen —
+und einer Rückfrage, die der User als überflüssig empfindet, ebenfalls.
 
 ## Schritt 4 — Eintrag schreiben (Architektur/Qualitativ)
 
@@ -132,7 +158,7 @@ noch unter `<repo>/.claude/skills/doku-update-sync/` liegt. Dann in dieser Reihe
 1. Im aktuellen Repo unter `.claude/skills/doku-update-sync/` nachsehen — dorthin kopiert ihn sein
    eigenes Setup, er ist dann oft schon da.
 2. Sonst von der Quelle holen: **https://github.com/fs-rgb/gsf-claude-skills**, roh unter
-   `https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/projektwissen/doku-update-sync/SKILL.md`.
+   `https://raw.githubusercontent.com/fs-rgb/gsf-claude-skills/main/doku-update-sync/SKILL.md`.
    Nach `<repo>/.claude/skills/doku-update-sync/SKILL.md` ablegen und dessen Setup-Modus ausführen.
    Das Geladene vorher prüfen: es muss mit `---` und `name: doku-update-sync` beginnen — eine
    Fehlerseite kommt sonst unbemerkt als Skill im Repo an.
@@ -145,9 +171,10 @@ gehört so in den Abschluss-Report.
 
 Läuft `doku-update-sync` im Sync-Modus und stößt auf eine **begründungsbedürftige** Änderung
 (Kurswechsel, verworfene Alternative, Tech-Stack-Wahl), ruft er diesen Skill auf und liefert das
-erkannte Signal als Kontext mit. Der Klärungs-Loop aus Schritt 3 läuft dann ganz normal — er wird
-nie übersprungen, nur weil der Auslöser automatisch war. Pro Lauf höchstens eine Übergabe je
-Richtung, damit sich die beiden Skills nicht gegenseitig aufrufen.
+erkannte Signal als Kontext mit. Schritt 3 läuft dann ganz normal — plausible Annahmen zuerst,
+Rückfrage nur bei schwer rückgängig zu machenden oder widersprüchlichen Punkten; das gilt genauso,
+wenn der Auslöser automatisch war. Pro Lauf höchstens eine Übergabe je Richtung, damit sich die
+beiden Skills nicht gegenseitig aufrufen.
 
 ### Sync-Marker
 
@@ -169,7 +196,11 @@ auszuführen. Das deckt die Lücke zwischen zwei Hook-Auslösungen ab, ersetzt d
 
 - Bestehende Einträge überschreiben oder löschen.
 - Eine neue Kategorie-Datei ohne Rückfrage anlegen.
-- Den Klärungs-Loop (Schritt 3) überspringen, nur weil die Entscheidung „offensichtlich" wirkt.
+- Bei schwer rückgängig zu machenden oder widersprüchlichen Punkten (Schritt 3, Punkt 3) trotzdem
+  nur annehmen statt zu fragen.
+- Für jeden noch offenen Punkt eine eigene Rückfrage stellen, obwohl eine plausible Annahme
+  gereicht hätte (Schritt 3, Punkt 2) — das Ziel ist leises Arbeiten, nicht Vollständigkeit um
+  jeden Preis.
 - Attribution erfinden, wenn die Git-Identität nicht ermittelbar ist.
 - Die Hart-Verdrahten-Frage aus Schritt 4b überspringen.
 - Die Übergabe an `doku-update-sync` aus Schritt 5 überspringen, solange noch kein Mechanismus
@@ -179,8 +210,8 @@ auszuführen. Das deckt die Lücke zwischen zwei Hook-Auslösungen ab, ersetzt d
   Hook-Mechanismen im selben Repo sind schlimmer als keiner.
 - Einen Hook committen/aktivieren ohne explizite Zustimmung.
 - Den `.last-sync`-Marker aktualisieren, ohne dass tatsächlich ein Lauf stattgefunden hat.
-- Den Klärungs-Loop überspringen, nur weil der Auslöser eine automatische Übergabe von
-  `doku-update-sync` war statt einer direkten Anfrage des Users.
+- Bei automatischer Übergabe von `doku-update-sync` die Annahme-zuerst-Logik aus Schritt 3
+  überspringen und stattdessen ungefragt raten oder ungefragt eine Rückfrage-Kaskade starten.
 
 ## Abschluss-Report
 
