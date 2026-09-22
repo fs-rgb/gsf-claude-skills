@@ -85,10 +85,18 @@ Lauf. Nichts davon passiert ohne ausdrückliche Zustimmung.
   nach stderr, woraus Windows PowerShell sonst einen Abbruch macht — der Hook feuert dann nie, ohne
   dass es auffällt.
 
-Die PDF wird aus `Anleitung-Projektwissen.html` erzeugt:
+Die PDF wird aus `Anleitung-Projektwissen.html` erzeugt. Chrome darf hier **nicht direkt in den
+Zielordner schreiben** — auf dem Desktop (OneDrive/geschützte Ordner) bricht es mit
+`Zugriff verweigert (0x5)` ab, obwohl der Renderlauf selbst funktioniert. Deshalb in einen
+temporären Ordner rendern und die fertige Datei anschließend kopieren:
 
 ```powershell
+$tmp = Join-Path $env:TEMP "anleitung.pdf"
 & "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --disable-gpu `
-  --no-pdf-header-footer --print-to-pdf="Anleitung-Projektwissen.pdf" `
-  "file:///$PWD/Anleitung-Projektwissen.html"
+  --no-pdf-header-footer --print-to-pdf="$tmp" `
+  "file:///$($PWD -replace '\\','/')/Anleitung-Projektwissen.html"
+Move-Item -Force $tmp "Anleitung-Projektwissen.pdf"
 ```
+
+Danach prüfen, dass die PDF **weiterhin genau zwei Seiten** hat — das Layout ist auf zwei Seiten
+ausgelegt, zusätzlicher Text kippt sonst unbemerkt auf eine dritte.

@@ -108,7 +108,8 @@
       <span class="frage">„Warum haben wir das so entschieden?“</span>
       <ul>
         <li>Diese Antwort steht <b>nirgends im Code</b> — nur in deinem Kopf.</li>
-        <li>Deshalb <b>fragt er dich</b>: Was war die Alternative? Warum habt ihr sie verworfen?</li>
+        <li>Er <b>nimmt an, was naheliegt</b>, und schreibt die Annahme sichtbar dazu — statt dich
+        mit Fragen aufzuhalten.</li>
         <li>Schreibt das Ergebnis mit Datum und Namen fest.</li>
       </ul>
     </div>
@@ -132,7 +133,7 @@
       <span class="note">Ein Befehl — beide Skills sind startklar.</span>
     </div>
     <div class="reihe">
-      <span class="kasten b"><b>Automatik merkt: da war was</b>nach Commit, Aufgabe, Session-Ende</span>
+      <span class="kasten b"><b>Automatik merkt: da war was</b>nach einer Aufgabe, am Session-Ende</span>
       <span class="pfeil">▶</span>
       <span class="kasten b"><b>Claude schreibt still mit</b>was er selbst sehen kann</span>
       <span class="note">Du merkst davon normalerweise nichts.</span>
@@ -140,8 +141,8 @@
     <div class="reihe">
       <span class="kasten b"><b>Das „Warum“ fehlt</b>Claude kann es nicht ableiten</span>
       <span class="pfeil">▶</span>
-      <span class="kasten a"><b>/decision-records fragt dich</b>kurz, gezielt, dann ist Ruhe</span>
-      <span class="note">Der einzige Moment, in dem du etwas tust.</span>
+      <span class="kasten a"><b>/decision-records hält es fest</b>nimmt an, was naheliegt</span>
+      <span class="note">Gefragt wirst du nur, wenn eine falsche Annahme teuer wäre.</span>
     </div>
   </div>
 
@@ -155,10 +156,11 @@
   <h2><span class="nr">2</span>Pro Projekt: einmal einrichten</h2>
   <p>Claude Code im Projektordner starten und eingeben:</p>
 <pre>/decision-records</pre>
-  <p>Claude sieht sich das Projekt an und <b>stellt dir Fragen</b> — erst zur Entscheidung selbst,
-  dann dazu, welche Doku dieses Projekt überhaupt braucht und was als wichtig gilt (z.&nbsp;B.
-  „Änderungen an den Workflows ja, Notizordner nein“). Am Ende zeigt er alles und fragt, ob er es
-  speichern darf. <b>Nichts passiert ohne dein Ja.</b></p>
+  <p>Claude sieht sich das Projekt an und <b>leitet das meiste selbst ab</b>: welche Doku dieses
+  Projekt braucht und was als wichtig gilt (z.&nbsp;B. „Änderungen an den Workflows ja, Notizordner
+  nein“). Gefragt wirst du nur zu den zwei Dingen, die sich schlecht zurücknehmen lassen: ob die
+  Automatik einen <code>git push</code> wirklich anhalten darf, und ob er sie einschalten darf.
+  Am Ende zeigt er alles und fragt, ob er es speichern darf. <b>Nichts passiert ohne dein Ja.</b></p>
   <p>Ist der Ordner ganz neu, fragt er vorweg, ob er ihn als Projekt anlegen darf
   (<code>git init</code>) — sag ja, sonst erkennt die Automatik später keine Änderungen. Den
   zweiten Skill lädt er sich selbst dazu und legt beide mit ins Projekt.</p>
@@ -175,7 +177,6 @@
   <h2>Wann die Automatik nachschaut</h2>
   <table>
     <tr><th>Moment</th><th>Was passiert</th></tr>
-    <tr><td>Nach einem Commit</td><td>Still. Du merkst nichts, außer es gab wirklich etwas Wichtiges.</td></tr>
     <tr><td>Aufgabe erledigt</td><td>Still. Der Moment, in dem das Wissen am frischesten ist.</td></tr>
     <tr><td>Am Ende der Session</td><td>Still. Damit nichts verloren geht, bevor du zumachst.</td></tr>
     <tr><td>Vor <code>git push</code></td><td>Fehlt Doku, <b>ergänzt Claude sie sofort selbst</b> — danach läuft der Push durch.</td></tr>
@@ -191,14 +192,20 @@
     <div class="skill b">
       <h3>Er schreibt allein</h3>
       <p style="margin:0; font-size:8.9pt;">Alles, was er im Projekt sehen kann: ein neuer Baustein,
-      eine neue Bibliothek, ein geändertes Datenmodell, ein überholter Stand.</p>
+      eine neue Bibliothek, ein geändertes Datenmodell, ein überholter Stand. Auch beim <b>Warum</b>
+      schreibt er, was aus eurem Gespräch naheliegt — und vermerkt dabei, dass es eine Annahme ist.</p>
     </div>
     <div class="skill a">
       <h3>Er fragt nach</h3>
-      <p style="margin:0; font-size:8.9pt;">Nur das <b>Warum</b>: Warum so und nicht anders? Was habt
-      ihr bewusst <i>nicht</i> gemacht? Das steht nirgends — nur in deinem Kopf.</p>
+      <p style="margin:0; font-size:8.9pt;">Nur wenn eine falsche Annahme teuer wäre: wenn er eine
+      frühere Entscheidung <i>umschreiben</i> würde, wenn etwas dem bisherigen Stand widerspricht,
+      oder wenn er an der Automatik selbst etwas ändert.</p>
     </div>
   </div>
+
+  <p style="font-size:8.9pt; color:#69727f;">Eine Annahme, die nicht stimmt, kostet dich einen Satz
+  im Chat („die Begründung war eine andere: …“) — Claude zieht den Eintrag nach. Das ist Absicht:
+  lieber eine korrigierbare Annahme im Eintrag als eine Rückfrage, die dich aus der Arbeit reißt.</p>
 
   <h2>Wenn der Push angehalten wird — du musst nichts tun</h2>
   <p>Dann fehlt Doku zu etwas, das du geändert hast. Claude fragt dich <b>nicht</b>, ob er das
