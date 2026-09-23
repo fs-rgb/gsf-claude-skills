@@ -348,21 +348,9 @@ statt sie verfallen zu lassen. Nie eine Begründung erfinden.
 ## Y6 — Marker aktualisieren
 
 `docs/decisions/.last-sync` mit aktuellem `HEAD`-SHA und Zeitstempel schreiben — **nur wenn
-tatsächlich ein Lauf stattgefunden hat.** Exaktes Feld-Schema, **keine anderen Feldnamen** (das
-Gate-Skript liest wortwörtlich `sha` und `reviewedAt` — `timestamp`, `date` oder ähnliches werden
-stillschweigend ignoriert und setzen die Freshness-Prüfung faktisch außer Kraft, ohne dass es
-auffällt):
-
-```json
-{
-  "sha": "<HEAD-SHA als String>",
-  "reviewedAt": "<aktuelle UTC-Zeit, z. B. 2026-09-23T14:05:00Z>"
-}
-```
-
-Die Datei wird **mitcommittet**: sie bedeutet „die Doku ist auf dem Stand dieses Commits" und ist
-damit eine geteilte Tatsache, nicht lokaler Zustand. Sonst würde jede neu klonende Person mit der
-kompletten Historie als vermeintlichem Delta starten.
+tatsächlich ein Lauf stattgefunden hat.** Die Datei wird **mitcommittet**: sie bedeutet „die Doku
+ist auf dem Stand dieses Commits" und ist damit eine geteilte Tatsache, nicht lokaler Zustand.
+Sonst würde jede neu klonende Person mit der kompletten Historie als vermeintlichem Delta starten.
 
 **Marker und Doku-Änderung gehören in denselben Commit.** Bleiben sie unversioniert liegen, klont
 das Team den alten Marker und bekommt Änderungen gemeldet, die längst dokumentiert sind — der
