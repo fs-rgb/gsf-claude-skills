@@ -4,14 +4,15 @@ description: >
   Legt Decision Record Documents (Architektur-Entscheidungen, Gesamtprojektarchitektur, wichtige
   qualitative Entscheidungen) für ein Projekt an und pflegt sie — portabel, funktioniert in jedem
   Projekt (neu gestartet oder bestehend). Nutze diesen Skill, wenn ein Projekt noch keine
-  Decision-Record-Struktur hat, wenn gerade eine Architektur-/Tech-Stack-/Prozess-Entscheidung
-  getroffen wurde und festgehalten werden soll, wenn noch kein Automatisierungs-Hook für künftige
-  Syncs existiert, oder wenn Claude ein entscheidungswürdiges Signal erkennt (neue Dependency,
-  neues Modul, Kurswechsel) und einen Sync vorschlägt. Arbeitet standardmäßig leise — plausible
-  Annahmen statt Rückfragen, sichtbar als Notiz im Eintrag — und fragt nur nach, wenn eine Wirkung
-  schwer rückgängig zu machen ist oder einem bestehenden Eintrag widerspricht. Baut die
-  Automatisierung nicht selbst: übergibt an den Schwesterskill doku-update-sync, der die Hooks
-  einrichtet und betreibt und die übrige Doku aktuell hält.
+  Decision-Record-Struktur hat (Bootstrap), wenn gerade eine Architektur-/Tech-Stack-/Prozess-/
+  qualitative Entscheidung getroffen wurde und festgehalten werden soll, wenn noch kein
+  Automatisierungs-Hook für künftige Syncs existiert, oder wenn Claude ein entscheidungswürdiges
+  Signal erkennt (neue Dependency, neues Modul, Kurswechsel) und einen Sync vorschlägt. Arbeitet
+  dabei standardmäßig leise — plausible Annahmen statt Rückfragen, sichtbar nur als Notiz im
+  Eintrag — und fragt aktiv nach nur, wenn eine Wirkung schwer rückgängig zu machen ist oder einem
+  bestehenden Eintrag widerspricht. Die Automatisierung baut dieser Skill nicht selbst: dafür
+  übergibt er an den Schwesterskill doku-update-sync, der die Hooks einrichtet, sie für beide
+  betreibt und die übrige Doku aktuell hält.
 ---
 
 # Skill: Decision Records
