@@ -1,7 +1,5 @@
 {
-  "_hinweis": "Vorlage fuer <repo>/.claude/settings.json (committed, NICHT settings.local.json — sonst greift im Team nichts). Existiert die Datei bereits, nur den 'hooks'-Block hineinmischen, nie ersetzen. Auf macOS/Linux stattdessen: \"command\": \".claude/hooks/doc-sync-gate.sh check\" bzw. \"... push\" bzw. \"... edit\". Hooks laufen mit dem Arbeitsverzeichnis des Projekts (bei Git-Repos dessen Root), deshalb relative Pfade.",
-
-  "_hinweis_onedit": "Der Edit|Write|NotebookEdit-Matcher braucht KEIN Git — er ist der einzige der vier Trigger, der auch in einem reinen Doku-/PDF-/Word-Ordner ohne Versionskontrolle funktioniert (siehe .doc-sync.json -> events.onEdit). Feuert auf jede Bearbeitung, drosselt sich aber selbst auf einen Hinweis je Datei und Sync-Zyklus. In edit-lastigen Sessions kostet das spuerbar Prozessstartzeit — bei Bedarf den Matcher-Block hier entfernen oder events.onEdit auf false setzen.",
+  "_hinweis": "Vorlage fuer <repo>/.claude/settings.json (committed, NICHT settings.local.json — sonst greift im Team nichts). Existiert die Datei bereits, nur den 'hooks'-Block hineinmischen, nie ersetzen. Auf macOS/Linux stattdessen: \"command\": \".claude/hooks/doc-sync-gate.sh check\" bzw. \"... push\". Hooks laufen mit dem Repo-Root als Arbeitsverzeichnis, deshalb relative Pfade.",
 
   "_hinweis_postcommit": "Das Event 'postCommit' ist bewusst NICHT registriert. Es braeuchte einen PostToolUse-Eintrag mit Matcher 'Bash|PowerShell' — und weil Claude Code Hooks nur nach Tool-Namen filtern kann, nicht nach Kommandoinhalt, wuerde dann nach JEDEM Bash-Aufruf ein eigener Prozess starten, nur um meist festzustellen, dass gar kein 'git commit' vorlag. Das kostet in einer laengeren Session Minuten reiner Prozessstartzeit, waehrend 'Stop' und der Push-Gate denselben Stand ohnehin abdecken. Wer es trotzdem will: den folgenden Block in 'PostToolUse' ergaenzen UND in .doc-sync.json 'postCommit': true setzen — {\"matcher\":\"Bash|PowerShell\",\"hooks\":[{\"type\":\"command\",\"command\":\"powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode check\",\"timeout\":20}]}",
 
@@ -25,16 +23,6 @@
           {
             "type": "command",
             "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode check",
-            "timeout": 20
-          }
-        ]
-      },
-      {
-        "matcher": "Edit|Write|NotebookEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .claude/hooks/doc-sync-gate.ps1 -Mode edit",
             "timeout": 20
           }
         ]

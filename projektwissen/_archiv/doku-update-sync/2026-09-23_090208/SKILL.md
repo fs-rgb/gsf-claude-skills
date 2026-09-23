@@ -27,13 +27,6 @@ Was aus dem Diff faktisch ableitbar ist (neues Modul, neue Dependency, geändert
 überholter Ist-Stand), wird ohne Rückfrage geschrieben. Gefragt wird nur, wenn eine **Entscheidung**
 erkennbar ist, deren Begründung nicht im Code steht — dafür gibt es `decision-records`.
 
-**Sofort-Abgleich ohne Hook.** Die Hooks (`taskDone`/`stop`/`prePush`/`onEdit`) sind die
-verlässliche Absicherung — aber verlass dich nicht ausschließlich auf sie. Hast du selbst gerade
-eine bereits beschriebene Datei bearbeitet (egal ob Code oder ein Word-/PDF-/Textdokument), prüf
-in derselben Aktion, ob die zugehörige Beschreibung noch stimmt, statt darauf zu warten, dass ein
-Hook dich später erinnert. Das greift auch dort, wo noch kein Setup gelaufen ist oder Hooks
-abgeschaltet sind — eine Selbstverpflichtung ohne Durchsetzungskraft, aber besser als nichts.
-
 ## Verhältnis zu `decision-records`
 
 | | `decision-records` | `doku-update-sync` (dieser Skill) |
@@ -99,27 +92,15 @@ rückgängig zu machen ist:
    Verzeichnisse als `ignore` vorbelegen, sonst breit als relevant behandeln (leere `relevant`-Liste).
    Nur nachfragen, wenn das Projekt einen ungewöhnlichen Aufbau hat, der sich nicht aus Historie
    oder Manifesten erschließt.
-4. **Welche Events sollen auslösen?** Default ohne Rückfrage: `taskDone`, `stop`, `prePush`,
-   `onEdit`. **`postCommit` bleibt aus** — es ist das teuerste und redundanteste Event: Claude Code
-   kann Hooks nur nach Tool-*Namen* filtern, nicht nach Kommandoinhalt, also müsste für `postCommit`
+4. **Welche Events sollen auslösen?** Default ohne Rückfrage: `taskDone`, `stop`, `prePush`.
+   **`postCommit` bleibt aus** — es ist das teuerste und redundanteste Event: Claude Code kann
+   Hooks nur nach Tool-*Namen* filtern, nicht nach Kommandoinhalt, also müsste für `postCommit`
    nach **jedem** Bash-Aufruf ein eigener Prozess starten, der dann meist nur feststellt, dass gar
    kein `git commit` vorlag. In einer Session mit ein paar hundert Bash-Calls summiert sich das auf
    Minuten reiner Prozessstartzeit — während `stop` und `prePush` denselben Stand ohnehin abdecken.
    Wer es trotzdem will, setzt in der Config `postCommit: true` **und** trägt den `PostToolUse`-
    Eintrag mit Matcher `Bash|PowerShell` in `.claude/settings.json` nach; der Config-Schalter allein
    spart den Prozessstart nicht, weil das Skript dafür schon laufen muss.
-
-   **`onEdit` ist der einzige Trigger, der kein Git braucht.** `taskDone`/`stop`/`prePush` laufen
-   alle über `git diff` — ohne Git-Repo (z. B. ein reiner Ordner mit Word-/PDF-Dokumenten statt
-   Code) bleiben sie wirkungslos, weil es dort kein `HEAD` und keinen Commit-Vergleich gibt.
-   `onEdit` prüft stattdessen direkt und ohne git diff die eine Datei, die gerade über
-   `Edit`/`Write`/`NotebookEdit` bearbeitet wurde, gegen `relevant`/`ignore` — das funktioniert in
-   jedem Ordner, versioniert oder nicht. Preis dafür: es feuert auf **jede** Bearbeitung einer
-   relevanten Datei, nicht nur nach abgeschlossener Aufgabe; dagegen drosselt sich das Skript
-   selbst auf einen Hinweis je Datei und Sync-Zyklus (Zustand in
-   `.claude/hooks/.doc-sync-onedit.json`, lokal, nicht committen). Ohne Git-Repo fehlt trotzdem der
-   Session-Ende-Backstop — `stop` prüft ja ebenfalls über `git diff` — dort trägt `onEdit` also die
-   gesamte Last allein.
 5. **Härtegrad des Push-Gates — hier immer nachfragen:** blockierend vs. nur Warnung ist die eine
    Stelle in diesem Skill, an der eine falsche Annahme sofort spürbar wird (blockierter `git push`).
    Default-Vorschlag „blockierend", aber als echte Frage stellen, nicht annehmen.
@@ -193,9 +174,7 @@ relevant oder irrelevant gilt.
 
 1. **Skript ablegen:** `.claude/hooks/doc-sync-gate.ps1` (Windows) bzw. `.claude/hooks/doc-sync-gate.sh`
    (macOS/Linux). Sprache am vorhandenen Hook-Bestand ausrichten; ohne Vorbild nach dem
-   Betriebssystem entscheiden. Bash-Variante ausführbar machen (`chmod +x`). Ist `onEdit` aktiv,
-   `.claude/hooks/.doc-sync-onedit.json` in `.gitignore` eintragen (falls noch nicht vorhanden,
-   die Datei anlegen) — das ist lokaler Drosselungs-Zustand, keine geteilte Information.
+   Betriebssystem entscheiden. Bash-Variante ausführbar machen (`chmod +x`).
 
    **Woher die Dateien kommen — in dieser Reihenfolge:**
 

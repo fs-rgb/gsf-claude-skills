@@ -4,13 +4,6 @@
 #
 #   ./doc-sync-gate.sh check   nach git commit / TodoWrite-Abschluss / Session-Ende
 #   ./doc-sync-gate.sh push    vor git push (blockiert)
-#   ./doc-sync-gate.sh edit    nach Edit/Write/NotebookEdit, braucht KEIN Git -
-#                              prueft nur die eine bearbeitete Datei direkt gegen
-#                              relevant/ignore, kein git diff. Einziger Modus, der
-#                              auch ohne Versionskontrolle funktioniert (reine
-#                              Word-/PDF-Ablage); check/push/stop bleiben git-
-#                              gebunden, es gibt dort also keinen Session-Ende-
-#                              Backstop ohne Git, nur den Sofort-Hinweis.
 #
 # Benoetigt jq. Bypass fuer den Push-Gate: DOC_SYNC_SKIP=1 git push
 
@@ -37,86 +30,6 @@ jqp() { [ -n "$PAYLOAD" ] && printf '%s' "$PAYLOAD" | jq -r "$1" 2>/dev/null || 
 
 TOOL="$(jqp '.tool_name // ""')"
 CMD="$(jqp '.tool_input.command // ""')"
-
-matches() {  # $1 = Pfad, stdin = Muster (ein Glob pro Zeile)
-  local pfad="$1" m
-  while IFS= read -r m; do
-    [ -z "$m" ] && continue
-    case "$m" in */) m="${m}**" ;; esac
-    # shellcheck disable=SC2254
-    case "$pfad" in $m) return 0 ;; esac
-    case "$m" in
-      */'**') case "$pfad" in "${m%/**}"/*) return 0 ;; esac ;;
-    esac
-  done
-  return 1
-}
-
-# ------------------------------------------------------------------ Edit-Modus
-# Eigener, git-unabhaengiger Zweig: prueft nur die eine gerade bearbeitete Datei,
-# kein git diff noetig. Deshalb VOR dem git-gebundenen Rest und mit eigenem Exit.
-if [ "$MODE" = "edit" ]; then
-  case "$TOOL" in Edit|Write|NotebookEdit) ;; *) silent ;; esac
-
-  FILE_PATH="$(jqp '.tool_input.file_path // ""')"
-  [ -n "$FILE_PATH" ] || silent
-
-  # Root: git bevorzugt (falls vorhanden), sonst das Arbeitsverzeichnis des Hooks -
-  # das ist bei Claude Code immer der Projektordner, auch ohne Git.
-  ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
-  [ -n "$ROOT" ] || ROOT="$PWD"
-
-  CONFIG="$ROOT/docs/decisions/.doc-sync.json"
-  [ -f "$CONFIG" ] || silent
-
-  [ "$(jq -r '.events.onEdit // true' "$CONFIG" 2>/dev/null)" = "false" ] && silent
-
-  case "$FILE_PATH" in
-    "$ROOT"/*) REL="${FILE_PATH#"$ROOT"/}" ;;
-    *)         REL="$FILE_PATH" ;;
-  esac
-
-  DOCS_ED="$(jq -r '(.docs // {}) | to_entries[] | .value' "$CONFIG" 2>/dev/null)
-docs/decisions/**"
-  IGNORE_ED="$(jq -r '(.ignore // [])[]' "$CONFIG" 2>/dev/null)"
-  RELEVANT_ED="$(jq -r '(.relevant // [])[]' "$CONFIG" 2>/dev/null)"
-
-  printf '%s\n' "$DOCS_ED" | matches "$REL" && silent
-  printf '%s\n' "$IGNORE_ED" | matches "$REL" && silent
-  if [ -n "$RELEVANT_ED" ]; then
-    printf '%s\n' "$RELEVANT_ED" | matches "$REL" || silent
-  fi
-
-  # Drosselung: pro Sync-Zyklus (reviewedAt aus .last-sync) nur einmal je Datei
-  # nudgen - sonst meldet sich der Hook bei jeder einzelnen Bearbeitung erneut.
-  MARKER_ED="$ROOT/docs/decisions/.last-sync"
-  REVIEWED_ED=""
-  [ -f "$MARKER_ED" ] && REVIEWED_ED="$(jq -r '.reviewedAt // ""' "$MARKER_ED" 2>/dev/null)"
-
-  STATE_DIR="$ROOT/.claude/hooks"
-  STATE_PATH="$STATE_DIR/.doc-sync-onedit.json"
-  PREV_ED=""
-  [ -f "$STATE_PATH" ] && PREV_ED="$(jq -r --arg f "$REL" '.[$f] // ""' "$STATE_PATH" 2>/dev/null)"
-  [ "$PREV_ED" = "$REVIEWED_ED" ] && silent
-
-  mkdir -p "$STATE_DIR" 2>/dev/null
-  if [ -f "$STATE_PATH" ]; then
-    jq --arg f "$REL" --arg r "$REVIEWED_ED" '.[$f] = $r' "$STATE_PATH" > "$STATE_PATH.tmp" 2>/dev/null \
-      && mv "$STATE_PATH.tmp" "$STATE_PATH"
-  else
-    jq -n --arg f "$REL" --arg r "$REVIEWED_ED" '{($f): $r}' > "$STATE_PATH" 2>/dev/null
-  fi
-
-  cat >&2 <<EOF
-[doku-update-sync] '$REL' bearbeitet - laut Konfiguration doku-relevant.
-
-Kein Git-Hook noetig fuer diesen Hinweis: pruefe direkt jetzt, in derselben Aufgabe, ob die
-zugehoerige Beschreibung (docs/decisions/.doc-sync.json -> "docs") noch stimmt, und schreibe
-faktisch Ableitbares still fort. Ist nichts zu aendern, einfach weiterarbeiten - dieser Hinweis
-erscheint fuer diese Datei erst nach dem naechsten echten Sync erneut.
-EOF
-  exit 2
-fi
 
 if [ "$TOOL" = "Bash" ] || [ "$TOOL" = "PowerShell" ]; then
   if [ "$MODE" = "push" ]; then
@@ -199,6 +112,19 @@ docs/decisions/**"
 IGNORE="$(jq -r '(.ignore // [])[]' "$CONFIG" 2>/dev/null)"
 RELEVANT="$(jq -r '(.relevant // [])[]' "$CONFIG" 2>/dev/null)"
 
+matches() {  # $1 = Pfad, stdin = Muster (ein Glob pro Zeile)
+  local pfad="$1" m
+  while IFS= read -r m; do
+    [ -z "$m" ] && continue
+    case "$m" in */) m="${m}**" ;; esac
+    # shellcheck disable=SC2254
+    case "$pfad" in $m) return 0 ;; esac
+    case "$m" in
+      */'**') case "$pfad" in "${m%/**}"/*) return 0 ;; esac ;;
+    esac
+  done
+  return 1
+}
 
 : > /tmp/.doc-sync-rel.$$
 while IFS= read -r f; do

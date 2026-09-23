@@ -11,13 +11,6 @@
                     Exit 2 + stderr -> Claude bekommt den Text als Arbeitsauftrag.
       -Mode push    Vor git push. Blockiert den Push (PreToolUse deny), solange
                     relevantes Delta undokumentiert ist.
-      -Mode edit    Nach Edit/Write/NotebookEdit. Braucht KEIN Git — prueft direkt
-                    die gerade bearbeitete Datei gegen "relevant"/"ignore", ohne
-                    git diff. Deshalb der einzige Modus, der auch in einem Ordner
-                    ohne Versionskontrolle funktioniert (z. B. reine Word-/PDF-
-                    Ablage). check/push/stop bleiben git-gebunden — ohne Git gibt
-                    es also keinen Session-Ende-Backstop, nur den Sofort-Hinweis
-                    direkt nach der Bearbeitung.
 
     Bypass fuer den Push-Gate: DOC_SYNC_SKIP im Kommando mitgeben, z. B.
       DOC_SYNC_SKIP=1 git push
@@ -28,7 +21,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('check', 'push', 'edit')]
+    [ValidateSet('check', 'push')]
     [string]$Mode = 'check'
 )
 
@@ -43,25 +36,6 @@ $ErrorActionPreference = 'Continue'
 function Exit-Silent { exit 0 }
 
 trap { Exit-Silent }
-
-function Convert-GlobToRegex([string]$glob) {
-    $re = [Regex]::Escape($glob)
-    $re = $re -replace '\\\*\\\*/', '(?:.*/)?'   # **/  -> beliebige Tiefe, auch keine
-    $re = $re -replace '\\\*\\\*', '.*'          # **   -> alles
-    $re = $re -replace '\\\*', '[^/]*'           # *    -> alles ausser /
-    $re = $re -replace '\\\?', '[^/]'
-    return "^$re$"
-}
-
-function Test-Match([string]$pfad, $muster) {
-    foreach ($m in $muster) {
-        if (-not $m) { continue }
-        $p = [string]$m
-        if ($p.EndsWith('/')) { $p = $p + '**' }
-        if ($pfad -match (Convert-GlobToRegex $p)) { return $true }
-    }
-    return $false
-}
 
 # ---------------------------------------------------------------- Hook-Payload
 
@@ -88,88 +62,6 @@ $cmd = ''
 if ($payload -and $payload.tool_input -and
     $payload.tool_input.PSObject.Properties.Name -contains 'command') {
     $cmd = [string]$payload.tool_input.command
-}
-
-# ------------------------------------------------------------------ Edit-Modus
-# Eigener, git-unabhaengiger Zweig: prueft nur die eine gerade bearbeitete Datei,
-# kein git diff noetig. Deshalb VOR dem git-gebundenen Rest und mit eigenem Exit.
-if ($Mode -eq 'edit') {
-    if ($toolName -ne 'Edit' -and $toolName -ne 'Write' -and $toolName -ne 'NotebookEdit') { Exit-Silent }
-
-    $filePath = ''
-    if ($payload.tool_input -and $payload.tool_input.PSObject.Properties.Name -contains 'file_path') {
-        $filePath = [string]$payload.tool_input.file_path
-    }
-    if (-not $filePath) { Exit-Silent }
-
-    # Root: git bevorzugt (falls vorhanden), sonst das Arbeitsverzeichnis des Hooks -
-    # das ist bei Claude Code immer der Projektordner, auch ohne Git.
-    $root = (& git rev-parse --show-toplevel 2>$null)
-    if ($LASTEXITCODE -ne 0 -or -not $root) { $root = (Get-Location).Path } else { $root = $root.Trim() }
-
-    $configPath = Join-Path $root 'docs/decisions/.doc-sync.json'
-    if (-not (Test-Path -LiteralPath $configPath)) { Exit-Silent }
-    try { $config = Get-Content -LiteralPath $configPath -Raw -Encoding UTF8 | ConvertFrom-Json }
-    catch { Exit-Silent }
-
-    if ($config.events -and $config.events.PSObject.Properties.Name -contains 'onEdit') {
-        if (-not $config.events.onEdit) { Exit-Silent }
-    }
-
-    $rel = $filePath.Replace('\', '/')
-    try {
-        $full = [System.IO.Path]::GetFullPath($filePath)
-        $rootFull = [System.IO.Path]::GetFullPath($root)
-        if ($full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) {
-            $rel = $full.Substring($rootFull.Length).TrimStart('\', '/').Replace('\', '/')
-        }
-    }
-    catch {}
-
-    $docPfade = @()
-    if ($config.docs) { foreach ($p in $config.docs.PSObject.Properties) { $docPfade += [string]$p.Value } }
-    $docPfade += 'docs/decisions/**'
-    if (Test-Match $rel $docPfade) { Exit-Silent }
-    if ($config.ignore -and (Test-Match $rel $config.ignore)) { Exit-Silent }
-    if ($config.relevant -and $config.relevant.Count -gt 0) {
-        if (-not (Test-Match $rel $config.relevant)) { Exit-Silent }
-    }
-
-    # Drosselung: pro Sync-Zyklus (reviewedAt aus .last-sync) nur einmal je Datei
-    # nudgen - sonst meldet sich der Hook bei jeder einzelnen Bearbeitung erneut.
-    $reviewedAt = ''
-    $lastSyncPath = Join-Path $root 'docs/decisions/.last-sync'
-    if (Test-Path -LiteralPath $lastSyncPath) {
-        try { $reviewedAt = [string]((Get-Content -LiteralPath $lastSyncPath -Raw -Encoding UTF8 | ConvertFrom-Json).reviewedAt) }
-        catch {}
-    }
-    $stateDir = Join-Path $root '.claude/hooks'
-    $statePath = Join-Path $stateDir '.doc-sync-onedit.json'
-    $state = @{}
-    if (Test-Path -LiteralPath $statePath) {
-        try {
-            (Get-Content -LiteralPath $statePath -Raw -Encoding UTF8 | ConvertFrom-Json).PSObject.Properties |
-                ForEach-Object { $state[$_.Name] = [string]$_.Value }
-        }
-        catch {}
-    }
-    if ($state.ContainsKey($rel) -and $state[$rel] -eq $reviewedAt) { Exit-Silent }
-    $state[$rel] = $reviewedAt
-    try {
-        if (-not (Test-Path -LiteralPath $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
-        ($state | ConvertTo-Json -Compress) | Set-Content -LiteralPath $statePath -Encoding UTF8
-    }
-    catch {}
-
-    [Console]::Error.WriteLine(@"
-[doku-update-sync] '$rel' bearbeitet - laut Konfiguration doku-relevant.
-
-Kein Git-Hook noetig fuer diesen Hinweis: pruefe direkt jetzt, in derselben Aufgabe, ob die
-zugehoerige Beschreibung (docs/decisions/.doc-sync.json -> "docs") noch stimmt, und schreibe
-faktisch Ableitbares still fort. Ist nichts zu aendern, einfach weiterarbeiten - dieser Hinweis
-erscheint fuer diese Datei erst nach dem naechsten echten Sync erneut.
-"@)
-    exit 2
 }
 
 # --- Nur bei den wirklich gemeinten Ereignissen anspringen --------------------
@@ -276,6 +168,25 @@ if ($reviewedAt -gt [DateTime]::MinValue) {
 }
 
 # ------------------------------------------------------------- Relevanz filtern
+
+function Convert-GlobToRegex([string]$glob) {
+    $re = [Regex]::Escape($glob)
+    $re = $re -replace '\\\*\\\*/', '(?:.*/)?'   # **/  -> beliebige Tiefe, auch keine
+    $re = $re -replace '\\\*\\\*', '.*'          # **   -> alles
+    $re = $re -replace '\\\*', '[^/]*'           # *    -> alles ausser /
+    $re = $re -replace '\\\?', '[^/]'
+    return "^$re$"
+}
+
+function Test-Match([string]$pfad, $muster) {
+    foreach ($m in $muster) {
+        if (-not $m) { continue }
+        $p = [string]$m
+        if ($p.EndsWith('/')) { $p = $p + '**' }
+        if ($pfad -match (Convert-GlobToRegex $p)) { return $true }
+    }
+    return $false
+}
 
 # Die gepflegten Doku-Dateien selbst duerfen nie ausloesen — sonst dreht sich
 # der Sync im Kreis (Doku aendern -> Hook feuert -> Doku aendern -> ...).

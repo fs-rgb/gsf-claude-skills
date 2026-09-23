@@ -36,10 +36,9 @@
     "postCommit": false,
     "taskDone": true,
     "stop": true,
-    "prePush": true,
-    "onEdit": true
+    "prePush": true
   },
-  "_events_warum": "Einzeln abschaltbar, ohne den Hook aus .claude/settings.json zu entfernen. taskDone/stop arbeiten still, prePush blockiert. postCommit steht auf false und ist in settings-hooks.json bewusst nicht registriert: es muesste nach JEDEM Bash-Aufruf einen Prozess starten (Hook-Matcher kennen nur Tool-Namen, keinen Kommandoinhalt) und wird von stop/prePush ohnehin abgedeckt. Zum Aktivieren beides noetig — hier true UND den PostToolUse-Eintrag in settings.json ergaenzen. onEdit ist der einzige Modus, der KEIN Git braucht (prueft direkt die bearbeitete Datei, kein git diff) — deshalb der einzige, der auch in einem reinen Doku-/PDF-/Word-Ordner ohne Versionskontrolle funktioniert. Feuert auf jeden Edit/Write/NotebookEdit-Aufruf, drosselt sich aber selbst auf einen Hinweis je Datei und Sync-Zyklus (siehe .doc-sync-onedit.json neben diesem Hook). Bei sehr edit-lastigen Sessions kann das trotzdem spuerbar Prozessstartzeit kosten — bei Bedarf hier auf false setzen, taskDone/stop/prePush decken dieselben Faelle in Git-Projekten ohnehin ab.",
+  "_events_warum": "Einzeln abschaltbar, ohne den Hook aus .claude/settings.json zu entfernen. taskDone/stop arbeiten still, prePush blockiert. postCommit steht auf false und ist in settings-hooks.json bewusst nicht registriert: es muesste nach JEDEM Bash-Aufruf einen Prozess starten (Hook-Matcher kennen nur Tool-Namen, keinen Kommandoinhalt) und wird von stop/prePush ohnehin abgedeckt. Zum Aktivieren beides noetig — hier true UND den PostToolUse-Eintrag in settings.json ergaenzen.",
 
   "pushGate": "block",
   "_pushGate_warum": "'block' verweigert den Push bis zum Sync (Bypass: DOC_SYNC_SKIP=1 git push). 'warn' meldet nur."
