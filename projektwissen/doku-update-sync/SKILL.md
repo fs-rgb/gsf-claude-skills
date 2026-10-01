@@ -475,13 +475,24 @@ Windows, sonst Bash.
       mitzunehmen ist (Y3a) — sonst arbeitet der Sync strikt am Diff und verliert genau das Wissen,
       das in keiner Datei steht.
 
-**Drei Fallstricke, die das Skript sonst stillschweigend unbrauchbar machen:**
+**Fünf Fallstricke, die das Skript sonst stillschweigend unbrauchbar machen:**
 
 - **PowerShell:** `$ErrorActionPreference` **nicht** auf `Stop` setzen. Windows PowerShell verpackt
   jede stderr-Zeile eines nativen Programms in einen Fehler, und `git` warnt routinemäßig
   (`LF will be replaced by CRLF`). Mit `Stop` wird daraus ein Abbruch — das Skript endet stumm mit
   Exit 0 und feuert nie, ohne dass es auffällt. `Continue` verwenden, Fehler stattdessen gezielt
   per `try/catch` und `$LASTEXITCODE` behandeln.
+- **PowerShell: Konsole vor dem ersten `git`-Aufruf auf UTF-8 stellen**
+  (`[Console]::OutputEncoding` und `InputEncoding`). `git` liefert Pfade als UTF-8, Windows
+  PowerShell 5.1 liest sie aber in der Konsolen-Codepage (meist 850). Enthält der Repo-Pfad einen
+  Umlaut, ist die Wurzel verstümmelt, die Config gilt als fehlend, und das Skript endet stumm mit
+  Exit 0: kein Hinweis, kein Push-Gate. Der Smoke-Test fällt darauf herein, weil er genau dieses
+  stumme Ende erwartet. Deshalb in solchen Repos zusätzlich prüfen, dass der Hook bei echtem Delta
+  **anschlägt**.
+- **Edit-Modus: Dateien außerhalb der Projektwurzel still ignorieren**, statt sie mit absolutem
+  Pfad als relevant zu melden. Sonst feuert der Hook bei jeder Datei im Scratchpad oder Temp-Ordner.
+  In der Bash-Variante unter Windows dabei `\` und `/` sowie die Schreibweise des Laufwerksbuchstabens
+  angleichen.
 - **Ausgabetexte rein ASCII halten** (`ae`/`oe`/`ue`, `-` statt Gedankenstrich). Sonst kommt der
   Text durch die Konsolen-Codepage verstümmelt bei Claude an.
 - **Bash-Variante: fehlendes `jq` darf nicht mit Exit 0 enden.** Die Variante parst den Payload mit

@@ -40,6 +40,16 @@ param(
 # explizit: try/catch an den Stellen, die wirklich scheitern koennen, plus $LASTEXITCODE-Pruefung.
 $ErrorActionPreference = 'Continue'
 
+# git liefert Pfade als UTF-8, Windows PowerShell 5.1 liest nativen Output aber in der
+# Konsolen-Codepage (z. B. ibm850). Bei Umlauten im Repo-Pfad wird der Pfad dann verstuemmelt,
+# die Config gilt als "nicht vorhanden" und der Hook endet stumm. Gleiches gilt fuer das
+# Hook-Payload auf stdin (file_path). Daher beides explizit auf UTF-8 stellen.
+try {
+    [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+    [Console]::InputEncoding  = New-Object System.Text.UTF8Encoding $false
+}
+catch {}
+
 function Exit-Silent { exit 0 }
 
 trap { Exit-Silent }
@@ -116,15 +126,17 @@ if ($Mode -eq 'edit') {
         if (-not $config.events.onEdit) { Exit-Silent }
     }
 
-    $rel = $filePath.Replace('\', '/')
+    # Dateien ausserhalb des Projekts (Scratchpad, Temp, andere Repos) betreffen dessen Doku nie.
+    $rel = ''
     try {
         $full = [System.IO.Path]::GetFullPath($filePath)
-        $rootFull = [System.IO.Path]::GetFullPath($root)
+        $rootFull = [System.IO.Path]::GetFullPath($root).TrimEnd('\', '/') + [System.IO.Path]::DirectorySeparatorChar
         if ($full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) {
-            $rel = $full.Substring($rootFull.Length).TrimStart('\', '/').Replace('\', '/')
+            $rel = $full.Substring($rootFull.Length).Replace('\', '/')
         }
     }
     catch {}
+    if (-not $rel) { Exit-Silent }
 
     $docPfade = @()
     if ($config.docs) { foreach ($p in $config.docs.PSObject.Properties) { $docPfade += [string]$p.Value } }
