@@ -71,9 +71,15 @@ if [ "$MODE" = "edit" ]; then
 
   [ "$(jq -r '.events.onEdit // true' "$CONFIG" 2>/dev/null)" = "false" ] && silent
 
-  case "$FILE_PATH" in
-    "$ROOT"/*) REL="${FILE_PATH#"$ROOT"/}" ;;
-    *)         REL="$FILE_PATH" ;;
+  # Dateien ausserhalb des Projekts (Scratchpad, Temp, andere Repos) betreffen dessen Doku nie.
+  # Vergleich mit / und ohne Gross-/Kleinschreibung, weil Git-Bash unter Windows C:\... liefert,
+  # git aber C:/... (und den Laufwerksbuchstaben mal gross, mal klein).
+  FP="$(printf '%s' "$FILE_PATH" | tr '\\' '/')"
+  FP_LC="$(printf '%s' "$FP" | tr '[:upper:]' '[:lower:]')"
+  ROOT_LC="$(printf '%s' "$ROOT" | tr '[:upper:]' '[:lower:]')"
+  case "$FP_LC" in
+    "$ROOT_LC"/*) REL="${FP:$(( ${#ROOT} + 1 ))}" ;;
+    *)            silent ;;
   esac
 
   DOCS_ED="$(jq -r '(.docs // {}) | to_entries[] | .value' "$CONFIG" 2>/dev/null)

@@ -1,0 +1,46 @@
+{
+  "_hinweis": "Vorlage. Wird im Setup-Modus von doku-update-sync nach docs/decisions/.doc-sync.json geschrieben und dort mit den Antworten aus dem Interview gefuellt. Die _warum-Felder sind Absicht: sie halten fest, WARUM ein Pfad als relevant oder irrelevant gilt, damit spaetere Aenderungen nicht blind erfolgen.",
+
+  "version": 1,
+  "skillSource": "https://github.com/fs-rgb/gsf-claude-skills",
+
+  "audience": "internes Team",
+  "_audience_warum": "Bestimmt Tonfall und Detailtiefe der Eintraege. Aus Frage 2 des Setup-Interviews.",
+
+  "docs": {
+    "architecture": "ARCHITECTURE.md",
+    "quality": "docs/decisions/QUALITY_DECISIONS.md",
+    "rules": "docs/decisions/RULES.md"
+  },
+  "_docs_warum": "Nur Artefakte eintragen, die im Setup bestaetigt wurden. Jedes hier gelistete wird vom Sync gepflegt — und loest selbst nie einen Sync aus.",
+
+  "relevant": [
+    "*.json",
+    "src/**",
+    "db/**",
+    "package.json",
+    "pyproject.toml"
+  ],
+  "_relevant_warum": "Aenderungen an diesen Pfaden koennen den dokumentierten Ist-Stand veraendern. Leere Liste bedeutet: alles ausser 'ignore' gilt als relevant.",
+
+  "ignore": [
+    "scratch/**",
+    "**/*.lock",
+    "**/*.test.*",
+    "tests/fixtures/**",
+    ".vscode/**"
+  ],
+  "_ignore_warum": "Rauschen. Wird vor 'relevant' geprueft und gewinnt immer.",
+
+  "events": {
+    "postCommit": false,
+    "taskDone": true,
+    "stop": true,
+    "prePush": true,
+    "onEdit": true
+  },
+  "_events_warum": "Einzeln abschaltbar, ohne den Hook aus .claude/settings.json zu entfernen. taskDone/stop arbeiten still, prePush blockiert. postCommit steht auf false und ist in settings-hooks.json bewusst nicht registriert: es muesste nach JEDEM Bash-Aufruf einen Prozess starten (Hook-Matcher kennen nur Tool-Namen, keinen Kommandoinhalt) und wird von stop/prePush ohnehin abgedeckt. Zum Aktivieren beides noetig — hier true UND den PostToolUse-Eintrag in settings.json ergaenzen. onEdit ist der einzige Modus, der KEIN Git braucht (prueft direkt die bearbeitete Datei, kein git diff) — deshalb der einzige, der auch in einem reinen Doku-/PDF-/Word-Ordner ohne Versionskontrolle funktioniert. Feuert auf jeden Edit/Write/NotebookEdit-Aufruf, drosselt sich aber selbst auf einen Hinweis je Datei und Sync-Zyklus (siehe .doc-sync-onedit.json neben diesem Hook). Bei sehr edit-lastigen Sessions kann das trotzdem spuerbar Prozessstartzeit kosten — bei Bedarf hier auf false setzen, taskDone/stop/prePush decken dieselben Faelle in Git-Projekten ohnehin ab.",
+
+  "pushGate": "block",
+  "_pushGate_warum": "'block' verweigert den Push bis zum Sync (Bypass: DOC_SYNC_SKIP=1 git push). 'warn' meldet nur."
+}
